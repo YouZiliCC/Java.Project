@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索页面</title>
+    <!-- 引入Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind自定义颜色 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .backdrop-blur-sm {
+                backdrop-filter: blur(4px);
+            }
+        }
+    </style>
+    
+    <style>
+        /* 基础样式 */
+        body {
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        
+        /* 粒子样式 */
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            border-radius: 50%;
+            z-index: 50;
+        }
+        
+        /* 烟花扩散动画 */
+        @keyframes explodeAndFade {
+            0% {
+                transform: translate(0, 0) scale(0.3);
+                opacity: 1;
+            }
+            70% {
+                opacity: 0.7;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        .animate-explode {
+            animation: explodeAndFade 1.8s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 font-inter text-slate-800 dark:text-slate-100 transition-colors duration-300">
+    <!-- 背景装饰元素 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-10">
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/30 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-24 w-96 h-96 bg-secondary/30 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 left-1/3 w-96 h-96 bg-accent/30 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="relative min-h-screen flex flex-col items-center justify-center p-4">
+        <!-- 登录面板 -->
+        <div id="loginPanel" class="w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition-all duration-500 transform">
+            <div class="text-center mb-8">
+                <h1 class="text-[clamp(1.5rem,3vw,2rem)] font-bold text-primary mb-2">欢迎回来</h1>
+                <p class="text-slate-500 dark:text-slate-400">请登录以继续使用搜索功能</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label for="username" class="block text-sm font-medium mb-2">用户名</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa fa-user"></i>
+                        </span>
+                        <input type="text" id="username" class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" placeholder="请输入用户名" required>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium mb-2">密码</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fa fa-lock"></i>
+                        </span>
+                        <input type="password" id="password" class="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all" placeholder="请输入密码" required>
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center">
+                        <input type="checkbox" class="rounded text-primary focus:ring-primary/50">
+                        <span class="ml-2 text-sm">记住我</span>
+                    </label>
+                    <a href="#" class="text-sm text-primary hover:underline">忘记密码?</a>
+                </div>
+                
+                <button type="submit" class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 px-4 rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                    登录
+                </button>
+            </form>
+        </div>
+
+        <!-- 搜索面板 (默认隐藏) -->
+        <div id="searchPanel" class="hidden w-full max-w-2xl transition-all duration-500">
+            <div class="text-center mb-8">
+                <h1 class="text-[clamp(1.8rem,4vw,2.5rem)] font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">搜索中心</h1>
+            </div>
+            
+            <!-- 搜索框容器 -->
+            <div class="relative w-full">
+                <!-- 搜索框 -->
+                <div class="flex items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-full shadow-lg overflow-hidden">
+                    <!-- 搜索输入框 -->
+                    <input type="text" placeholder="请输入搜索内容..." class="flex-1 px-6 py-4 bg-transparent focus:outline-none text-lg" id="question">
+                    
+                    <!-- 下拉菜单按钮 -->
+                    <div class="relative" id="dropdownContainer">
+                        <button id="dropdownButton" class="px-4 py-4 flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <i class="fa fa-filter text-slate-600 dark:text-slate-400"></i>
+                        </button>
+                        
+                        <!-- 下拉菜单 (默认隐藏) -->
+                        <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl py-2 z-10">
+                            <label class="flex items-center px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                                <input type="checkbox" class="mr-2 text-primary">
+                                <span>网页</span>
+                            </label>
+                            <label class="flex items-center px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                                <input type="checkbox" class="mr-2 text-primary">
+                                <span>图片</span>
+                            </label>
+                            <label class="flex items-center px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                                <input type="checkbox" class="mr-2 text-primary">
+                                <span>视频</span>
+                            </label>
+                            <label class="flex items-center px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer">
+                                <input type="checkbox" class="mr-2 text-primary">
+                                <span>新闻</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 搜索按钮 -->
+                    <button class="px-6 py-4 bg-primary hover:bg-primary/90 text-white transition-colors" id="b">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+                <h4></h4>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM元素
+        const loginPanel = document.getElementById('loginPanel');
+        const searchPanel = document.getElementById('searchPanel');
+        const loginForm = document.getElementById('loginForm');
+        const dropdownButton = document.getElementById('dropdownButton');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        
+        // 记录鼠标位置
+        let mouseX = window.innerWidth / 2;
+        let mouseY = window.innerHeight / 2;
+        
+        // 登录表单提交事件
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // 登录动画效果
+            loginPanel.classList.add('opacity-0', 'scale-95');
+            
+            // 延迟显示搜索面板
+            setTimeout(() => {
+                loginPanel.classList.add('hidden');
+                searchPanel.classList.remove('hidden');
+            }, 500);
+        });
+        
+        // 下拉菜单切换
+        dropdownButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdownMenu.classList.toggle('hidden');
+        });
+        
+        // 点击页面其他地方关闭下拉菜单
+        document.addEventListener('click', () => {
+            dropdownMenu.classList.add('hidden');
+        });
+        
+        // 更新鼠标位置
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        // 创建烟花效果 - 粒子从鼠标位置向外扩散并渐隐
+        function createFirework() {
+            // 粒子数量：12-20个，确保扩散效果明显又不过于密集
+            const particlesCount = Math.floor(Math.random() * 8) + 12;
+            // 烟花颜色集合
+            const colors = [
+                '#3B82F6', '#10B981', '#8B5CF6', '#EC4899', 
+                '#F59E0B', '#EF4444', '#06B6D4', '#14B8A6'
+            ];
+            // 随机选择一种主色调
+            const mainColor = colors[Math.floor(Math.random() * colors.length)];
+            
+            // 创建多个粒子形成扩散效果
+            for (let i = 0; i < particlesCount; i++) {
+                // 创建粒子元素
+                const particle = document.createElement('div');
+                particle.classList.add('particle', 'animate-explode');
+                
+                // 随机粒子大小 (2-6px)
+                const size = Math.random() * 4 + 2;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // 粒子颜色：主要使用主色调，混合少量其他颜色增加变化
+                particle.style.backgroundColor = Math.random() > 0.2 ? mainColor : colors[Math.floor(Math.random() * colors.length)];
+                
+                // 定位在鼠标位置
+                particle.style.left = `${mouseX}px`;
+                particle.style.top = `${mouseY}px`;
+                
+                // 计算扩散角度（360度均匀分布）
+                const angle = (i / particlesCount) * Math.PI * 2;
+                
+                // 扩散距离（50-100px），确保粒子扩散范围足够大
+                const distance = Math.random() * 50 + 50;
+                
+                // 计算粒子最终位置的偏移量
+                const tx = Math.cos(angle) * distance;
+                const ty = Math.sin(angle) * distance;
+                
+                // 设置CSS变量，用于动画中的位移
+                particle.style.setProperty('--tx', `${tx}px`);
+                particle.style.setProperty('--ty', `${ty}px`);
+                
+                // 添加到页面
+                document.body.appendChild(particle);
+                
+                // 动画结束后移除粒子元素
+                setTimeout(() => {
+                    particle.remove();
+                }, 1800);
+            }
+        }
+        
+        // 每隔2秒左右自动绽放一次烟花（加入随机偏移避免机械感）
+        setInterval(createFirework, 2000 + Math.random() * 600);
+        
+        // 页面加载完成后立即显示一次烟花
+        window.addEventListener('load', createFirework);
+
+        //检测输入框是否可以正常传参
+        document.querySelector("#b").onclick=function(){
+            var question=document.querySelector("#question").value;
+            fetch("http://localhost:8080/hello?question="+question)
+                .then(resp=>resp.text())
+                .then(text=>{
+                    document.querySelector("h4").innerText=text;
+                })
+        }
+    </script>
+</body>
+</html>
+    
