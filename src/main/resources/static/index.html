@@ -426,7 +426,7 @@
         //检测输入框是否可以正常传参
         document.querySelector("#b").onclick=function(){
             var question=document.querySelector("#question").value;
-            fetch("http://localhost:8080/hello?question="+question)
+            fetch("/hello?question="+question)
                 .then(resp=>resp.text())
                 .then(text=>{
                     document.querySelector("h4").innerText=text;
@@ -435,7 +435,7 @@
 
         document.querySelector('#sendVerifyCode').onclick=function(){
             var email=document.querySelector("#regEmail").value;
-            fetch("http://localhost:8080/verifycode?email="+email)
+            fetch("/verifycode?email="+email)
                 .then(resp=>resp.text())
                 .then(text=>{
                     // 核心修改：根据服务器返回的文本显示弹窗
@@ -460,7 +460,7 @@
                 return;
             }
 
-            fetch("http://localhost:8080/submit?uname="+uname+"&password="+password+"&email="+email+"&verifycode="+verifycode)
+            fetch("/submit?uname="+uname+"&password="+password+"&email="+email+"&verifycode="+verifycode)
                 .then(resp=>resp.text())
                 .then(text=>{
                     // 核心修改：根据服务器返回的文本显示弹窗
@@ -499,7 +499,7 @@
             }
     
             // 发送登录请求（核心修改：根据返回结果判断是否跳转）
-            fetch("http://localhost:8080/login?uname=" + uname + "&password=" + password)
+            fetch("/login?uname=" + uname + "&password=" + password)
                 .then(resp => resp.text())
                 .then(text => {
                     if (text.includes('成功')) { // 后端返回“登录成功”

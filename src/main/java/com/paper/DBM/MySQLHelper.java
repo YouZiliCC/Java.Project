@@ -13,7 +13,7 @@ public class MySQLHelper {
     
     public MySQLHelper() throws ClassNotFoundException, SQLException{
         Class.forName("com.mysql.cj.jdbc.Driver");
-        connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/PAPER_sys","root","MySQLnewPassword2025");
+        connection = DriverManager.getConnection("jdbc:mysql://rm-2zeqtyu0u869yqlh59o.mysql.rds.aliyuncs.com:3306/PAPER_sys","root","MySQLnewPassword2025");
     }
     
     public String executeSQL(String sqlString, Object... params) {
