@@ -39,6 +39,8 @@ dependencies {
     implementation 'com.sun.activation:jakarta.activation:2.0.1'
 	// 添加 MySQL 驱动依赖
     runtimeOnly 'mysql:mysql-connector-java:8.0.30'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 }
 
 tasks.named('test') {

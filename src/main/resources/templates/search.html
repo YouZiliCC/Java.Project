@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>搜索结果</title>
+    <!-- 引入外部资源 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- 配置Tailwind -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3B82F6',
+                        secondary: '#10B981',
+                        accent: '#8B5CF6',
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <!-- 自定义工具类 -->
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .backdrop-blur-sm {
+                backdrop-filter: blur(4px);
+            }
+            .card-hover {
+                @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+            }
+            .page-btn {
+                @apply px-3 py-1 rounded-md transition-all;
+            }
+            .page-btn-active {
+                @apply bg-primary text-white;
+            }
+        }
+    </style>
+    
+    <style>
+        body {
+            min-height: 100vh;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 font-inter text-slate-800 dark:text-slate-100">
+    <!-- 背景装饰 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none opacity-20 dark:opacity-10">
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-primary/30 rounded-full blur-3xl"></div>
+        <div class="absolute top-1/3 -right-24 w-96 h-96 bg-secondary/30 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- 顶部搜索框 -->
+    <header class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm shadow-sm py-4 px-4 md:px-8">
+        <div class="max-w-5xl mx-auto">
+            <div class="flex items-center gap-2">
+                <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">搜索中心</h1>
+                <div class="relative flex-1 max-w-2xl">
+                    <input type="text" placeholder="继续搜索..." id="searchInput" class="w-full pl-4 pr-10 py-2 rounded-full border border-slate-300 dark:border-slate-700 bg-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all">
+                    <button id="searchBtn" class="absolute right-1 top-1/2 transform -translate-y-1/2 px-3 py-1 bg-primary hover:bg-primary/90 text-white rounded-full transition-all">
+                        <i class="fa fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        <!-- 搜索信息统计 -->
+        <div class="mb-6 text-sm text-slate-500 dark:text-slate-400">
+            找到约 <span id="resultCount" class="font-medium text-primary">0</span> 条结果，用时 <span id="searchTime" class="font-medium">0.32</span> 秒
+        </div>
+        
+        <!-- 搜索结果容器 -->
+        <div id="resultsContainer" class="space-y-4 mb-10">
+            <!-- 结果卡片将通过JS动态生成 -->
+        </div>
+        
+        <!-- 加载中状态 -->
+        <div id="loading" class="hidden py-10 text-center">
+            <div class="inline-block w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+            <p class="mt-2 text-slate-500">加载中...</p>
+        </div>
+        
+        <!-- 无结果状态 -->
+        <div id="noResults" class="hidden py-10 text-center">
+            <i class="fa fa-search-minus text-4xl text-slate-300 dark:text-slate-600 mb-3"></i>
+            <p class="text-slate-500">未找到相关结果</p>
+        </div>
+        
+        <!-- 分页控件 -->
+        <div id="pagination" class="flex flex-wrap justify-center items-center gap-1 py-6">
+            <button class="page-btn" id="prevPage" disabled>
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <div id="pageNumbers" class="flex gap-1">
+                <!-- 页码按钮将通过JS动态生成 -->
+            </div>
+            <button class="page-btn" id="nextPage" disabled>
+                <i class="fa fa-chevron-right"></i>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // 状态管理
+        const state = {
+            currentPage: 1,
+            totalPages: 1,
+            resultsPerPage: 15,
+            totalResults: 0,
+            searchQuery: ''
+        };
+
+        // DOM元素
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const loading = document.getElementById('loading');
+        const noResults = document.getElementById('noResults');
+        const resultCount = document.getElementById('resultCount');
+        const pagination = document.getElementById('pagination');
+        const prevPageBtn = document.getElementById('prevPage');
+        const nextPageBtn = document.getElementById('nextPage');
+        const pageNumbers = document.getElementById('pageNumbers');
+
+        // 初始化页面
+        function init() {
+            // 从URL获取搜索词
+            const params = new URLSearchParams(window.location.search);
+            state.searchQuery = params.get('q') || '';
+            searchInput.value = state.searchQuery;
+            
+            if (state.searchQuery) {
+                fetchResults();
+            }
+            
+            // 绑定事件
+            searchBtn.addEventListener('click', () => performSearch());
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+            
+            prevPageBtn.addEventListener('click', () => goToPage(state.currentPage - 1));
+            nextPageBtn.addEventListener('click', () => goToPage(state.currentPage + 1));
+        }
+
+        // 执行搜索
+        function performSearch() {
+            const query = searchInput.value.trim();
+            if (!query) return;
+            
+            state.searchQuery = query;
+            state.currentPage = 1;
+            window.history.pushState({}, '', `?q=${encodeURIComponent(query)}`);
+            fetchResults();
+        }
+
+        // 获取搜索结果
+        function fetchResults() {
+            if (!state.searchQuery) return;
+            
+            showLoading();
+            hideNoResults();
+            
+            // 模拟API请求
+            setTimeout(() => {
+                // 生成模拟数据
+                const mockResults = Array.from({length: 37}, (_, i) => ({
+                    id: i + 1,
+                    title: `${state.searchQuery} 相关结果 ${i + 1}`,
+                    snippet: `这是关于"${state.searchQuery}"的搜索结果描述内容，包含了相关的信息和摘要，帮助用户快速了解内容...`,
+                    url: `https://example.com/result/${i + 1}`,
+                    source: `示例网站 ${i % 5 + 1}`,
+                    date: new Date(Date.now() - i * 86400000).toLocaleDateString()
+                }));
+                
+                // 更新状态
+                state.totalResults = mockResults.length;
+                state.totalPages = Math.ceil(state.totalResults / state.resultsPerPage);
+                
+                // 显示结果
+                renderResults(mockResults);
+                updatePagination();
+                resultCount.textContent = state.totalResults;
+                hideLoading();
+                
+                // 检查是否有结果
+                if (state.totalResults === 0) {
+                    showNoResults();
+                }
+            }, 800);
+        }
+
+        // 渲染结果列表
+        function renderResults(results) {
+            resultsContainer.innerHTML = '';
+            
+            // 计算当前页应显示的结果
+            const startIndex = (state.currentPage - 1) * state.resultsPerPage;
+            const endIndex = startIndex + state.resultsPerPage;
+            const currentResults = results.slice(startIndex, endIndex);
+            
+            // 创建结果卡片
+            currentResults.forEach((result, index) => {
+                const card = document.createElement('div');
+                card.className = 'bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm rounded-xl shadow-sm p-5 card-hover fade-in';
+                card.style.animationDelay = `${index * 50}ms`;
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-semibold text-primary hover:underline">
+                            <a href="${result.url}" target="_blank">${result.title}</a>
+                        </h3>
+                        <span class="text-xs text-slate-500">${result.date}</span>
+                    </div>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm mb-3">${result.snippet}</p>
+                    <div class="flex items-center text-xs text-slate-500">
+                        <i class="fa fa-link mr-1"></i>
+                        <span>${result.source}</span>
+                        <span class="mx-2">•</span>
+                        <span>${result.url}</span>
+                    </div>
+                `;
+                
+                resultsContainer.appendChild(card);
+            });
+        }
+
+        // 更新分页控件
+        function updatePagination() {
+            pageNumbers.innerHTML = '';
+            
+            // 更新按钮状态
+            prevPageBtn.disabled = state.currentPage === 1;
+            nextPageBtn.disabled = state.currentPage === state.totalPages;
+            
+            // 只显示当前页附近的页码
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, state.currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = startPage + maxVisiblePages - 1;
+            
+            if (endPage > state.totalPages) {
+                endPage = state.totalPages;
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // 添加第一页按钮
+            if (startPage > 1) {
+                addPageButton(1);
+                if (startPage > 2) addEllipsis();
+            }
+            
+            // 添加中间页码
+            for (let i = startPage; i <= endPage; i++) {
+                addPageButton(i);
+            }
+            
+            // 添加最后一页按钮
+            if (endPage < state.totalPages) {
+                if (endPage < state.totalPages - 1) addEllipsis();
+                addPageButton(state.totalPages);
+            }
+        }
+
+        // 添加页码按钮
+        function addPageButton(pageNum) {
+            const btn = document.createElement('button');
+            btn.className = `page-btn ${pageNum === state.currentPage ? 'page-btn-active' : 'hover:bg-slate-200 dark:hover:bg-slate-700'}`;
+            btn.textContent = pageNum;
+            
+            btn.addEventListener('click', () => goToPage(pageNum));
+            pageNumbers.appendChild(btn);
+        }
+
+        // 添加省略号
+        function addEllipsis() {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'px-2 text-slate-400';
+            ellipsis.textContent = '...';
+            pageNumbers.appendChild(ellipsis);
+        }
+
+        // 跳转到指定页
+        function goToPage(pageNum) {
+            if (pageNum < 1 || pageNum > state.totalPages) return;
+            
+            state.currentPage = pageNum;
+            fetchResults();
+            
+            // 平滑滚动到顶部
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 显示加载状态
+        function showLoading() {
+            loading.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+            pagination.classList.add('hidden');
+        }
+
+        // 隐藏加载状态
+        function hideLoading() {
+            loading.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+            pagination.classList.remove('hidden');
+        }
+
+        // 显示无结果状态
+        function showNoResults() {
+            noResults.classList.remove('hidden');
+            resultsContainer.classList.add('hidden');
+            pagination.classList.add('hidden');
+        }
+
+        // 隐藏无结果状态
+        function hideNoResults() {
+            noResults.classList.add('hidden');
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

@@ -12,6 +12,48 @@ public class Paper {
     private int pages;
     private String doi;
     private String country;
+    private String author;
+    private String target;
+    private String conference;
+    private int citations;
+    private int refs;
+    private String wos_id;
+    public String getWos_id(){
+        return wos_id;
+    }
+    public void setWos_id(String wos_id){
+        this.wos_id=wos_id;
+    }
+    public int getRefs(){
+        return refs;
+    }
+    public void setRefs(int refs){
+        this.refs=refs;
+    }
+    public int getCitations(){
+        return citations;
+    }
+    public void setCitations(int citations){
+        this.citations=citations;
+    }
+    public String getConference(){
+        return conference;
+    }
+    public void setConference(String conference){
+        this.conference=conference;
+    }
+    public String getTarget(){
+        return target;
+    }
+    public void setTarget(String target){
+        this.target=target;
+    }
+    public String getAuthor(){
+        return author;
+    }
+    public void setAuthor(String author){
+        this.author=author;
+    }
     public String getTitle(){
         return title;
     }
