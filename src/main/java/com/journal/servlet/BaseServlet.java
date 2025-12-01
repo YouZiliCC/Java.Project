@@ -3,6 +3,8 @@ package com.journal.servlet;
 import com.journal.config.ThymeleafConfig;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
+import org.thymeleaf.web.IWebExchange;
+import org.thymeleaf.web.servlet.JavaxServletWebApplication;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -29,7 +31,9 @@ public abstract class BaseServlet extends HttpServlet {
      * 创建WebContext
      */
     protected WebContext createWebContext(HttpServletRequest request, HttpServletResponse response) {
-        return new WebContext(request, response, request.getServletContext());
+        JavaxServletWebApplication webApplication = ThymeleafConfig.getWebApplication();
+        IWebExchange webExchange = webApplication.buildExchange(request, response);
+        return new WebContext(webExchange);
     }
 
     /**
