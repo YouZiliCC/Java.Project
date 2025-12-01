@@ -183,13 +183,13 @@
             <div class="row g-4">
                 <div class="col-md-4">
                     <div class="stats-card text-center">
-                        <div class="stats-number" th:text="${stats?.journalCount} ?: 0">0</div>
+                        <div class="stats-number" th:text="${stats != null ? stats.journalCount : 0}">0</div>
                         <div>收录期刊</div>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="stats-card text-center">
-                        <div class="stats-number" th:text="${stats?.countryStats?.size()} ?: 0">0</div>
+                        <div class="stats-number" th:text="${stats != null and stats.countryStats != null ? stats.countryStats.size() : 0}">0</div>
                         <div>覆盖国家/地区</div>
                     </div>
                 </div>
