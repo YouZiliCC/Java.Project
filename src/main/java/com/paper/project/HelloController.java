@@ -1,6 +1,7 @@
 package com.paper.project;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,57 +19,50 @@ import com.paper.Entity.Paper;
 public class HelloController {
     @GetMapping("/search/result")
     @ResponseBody
-    public String SearchResult(@RequestParam(required = false, defaultValue = "未传入内容") String keyword, Model model) {
-        // 拼接参数返回（此时question不可能为null，避免NullPointerException）
-        // 1. 业务逻辑：比如查询数据库获取搜索结果
+    public Map<String, Object> SearchResult(@RequestParam(required = false, defaultValue = "未传入内容") String keyword) {
+        // 创建响应Map
+        Map<String, Object> response = new HashMap<>();
+        
+        // 1. 业务逻辑：查询数据库获取搜索结果
         List<Paper> paperList = null;
         SearchManager searchManager = new SearchManager();
+        long startTime = System.currentTimeMillis();
+        
         try {
             paperList = searchManager.SearchByTarget(keyword);
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
-        } 
+            response.put("error", "搜索失败: " + e.getMessage());
+            return response;
+        }
         
-        // 打印paperList到终端
-        System.out.println("=== 搜索结果信息 ===");
-        System.out.println("搜索关键词: " + keyword);
-        if (paperList != null) {
-            System.out.println("结果数量: " + paperList.size());
-            for (int i = 0; i < paperList.size(); i++) {
-                Paper paper = paperList.get(i);
-                System.out.println("\n结果 " + (i + 1) + ":");
-                System.out.println("标题: " + paper.getTitle());
-                System.out.println("作者: " + paper.getAuthor());
-                System.out.println("目标: " + paper.getTarget());
-                System.out.println("期刊: " + paper.getJournal());
-                System.out.println("发表日期: " + paper.getPublish_date());
-                System.out.println("DOI: " + paper.getDoi());
-            }
+        long endTime = System.currentTimeMillis();
+        double searchTime = (endTime - startTime) / 1000.0;
+        
+        // 2. 设置基本搜索信息
+        response.put("keyword", keyword);
+        response.put("searchTime", searchTime);
+        
+        if (paperList != null && !paperList.isEmpty()) {
+            response.put("totalResults", paperList.size());
+            response.put("results", paperList);
             
-            // 调用Python脚本进行数据分析
+            // 3. 调用Python脚本进行数据分析
             try {
                 PythonCaller pythonCaller = new PythonCaller();
                 Map<String, Object> analysisResult = pythonCaller.analyzePapers(paperList);
-                
-                System.out.println("\n=== 数据分析结果 ===");
-                System.out.println("总论文数: " + analysisResult.get("total_papers"));
-                System.out.println("平均引用数: " + analysisResult.get("avg_citations"));
-                System.out.println("平均参考文献数: " + analysisResult.get("avg_refs"));
-                System.out.println("目标领域分布: " + analysisResult.get("target_distribution"));
-                System.out.println("国家分布: " + analysisResult.get("country_distribution"));
-                System.out.println("引用最多的论文: " + analysisResult.get("most_cited_paper"));
-                System.out.println("==================\n");
-                
+                response.put("analysis", analysisResult);
             } catch (Exception e) {
                 System.err.println("数据分析失败: " + e.getMessage());
-                e.printStackTrace();
+                response.put("analysisError", "数据分析失败: " + e.getMessage());
             }
             
         } else {
-            System.out.println("未找到搜索结果或发生错误");
+            response.put("totalResults", 0);
+            response.put("results", paperList);
         }
-        System.out.println("==================\n");
-        return null;
+        
+        return response;
         
         // 2. 把数据存入 Model（key-value 形式）
         //model.addAttribute("keyword", keyword); // 存搜索关键词
