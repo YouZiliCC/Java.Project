@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 期刊评价系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="profile.css">
+</head>
+<body class="bg-linear-to-br from-slate-50 to-slate-100 font-inter text-slate-800">
+    <!-- 顶部导航栏 -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500 shadow-lg text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="home.html" class="flex items-center space-x-2">
+                        <i class="fa fa-book text-white text-2xl"></i>
+                        <div>
+                            <div class="text-white font-bold text-lg">期刊评价系统</div>
+                            <div class="text-xs text-slate-200">Journal Evaluation System</div>
+                        </div>
+                    </a>
+                </div>
+                <nav class="hidden md:flex space-x-4">
+                    <a href="search.html" class="nav-link font-medium text-white hover:text-yellow-300">期刊查询</a>
+                    <a href="survey.html" class="nav-link text-yellow-300">个人分析</a>
+                    <a href="import_analysis.html" class="nav-link text-blue-100 hover:text-yellow-300">自主导入分析</a>
+                    <a href="smart_qna.html" class="nav-link text-blue-100 hover:text-yellow-300">智能问答</a>
+                    <a href="profile.html" class="nav-link text-blue-100 hover:text-yellow-300">个人中心</a>
+                    <a href="admin_center.html" class="nav-link text-blue-100 hover:text-yellow-300" id="admin-link" style="display: none;">管理中心</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+    <!-- 页面主体 -->
+    <main class="section-padding pt-28 pb-20 px-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="profile-card fade-in mb-12 flex flex-col md:flex-row items-center gap-10">
+                <img src="https://i.pravatar.cc/120?u=example" alt="用户头像" class="profile-avatar mb-6 md:mb-0">
+                <div class="flex-1">
+                    <h1 class="text-3xl font-bold mb-2">张三</h1>
+                    <p class="text-slate-600 mb-4">高级研究员 | 北京大学信息管理系</p>
+                    <ul class="profile-info-list text-slate-700">
+                        <li><strong>邮箱：</strong> zhangsan@example.com</li>
+                        <li><strong>手机号：</strong> 138-8888-8888</li>
+                        <li><strong>学术ID：</strong> ORCID: 0000-0002-1234-5678</li>
+                        <li><strong>研究方向：</strong> 信息检索、人工智能、数字图书馆</li>
+                        <li><strong>个人简介：</strong> 致力于智能信息系统与学术评价方法研究，主持多项国家级课题。</li>
+                        <li><strong>单位/部门：</strong> 北京大学信息管理系</li>
+                        <li><strong>职称：</strong> 高级研究员</li>
+                        <li><strong>注册时间：</strong> 2022-03-15</li>
+                        <li><strong>最近登录：</strong> 2025-12-12 09:30</li>
+                        <li><strong>积分：</strong> 1200</li>
+                        <li><strong>VIP状态：</strong> 普通用户</li>
+                        <li><strong>绑定微信：</strong> 已绑定</li>
+                        <li><strong>绑定邮箱：</strong> 已绑定</li>
+                        <li><strong>论文数：</strong> 18</li>
+                        <li><strong>期刊分析报告数：</strong> 7</li>
+                        <li><strong>问答历史数：</strong> 23</li>
+                        <li><strong>收藏期刊：</strong> 5</li>
+                        <li><strong>收藏报告：</strong> 2</li>
+                        <li><strong>系统通知：</strong> 3条未读</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="grid md:grid-cols-2 gap-10">
+                <div class="fade-in">
+                    <div class="profile-section-title">近期期刊分析报告</div>
+                    <ul class="bg-slate-50 p-6 rounded-xl shadow-md">
+                        <li><strong>2025-12-10</strong> | 《人工智能与信息检索》分析报告</li>
+                        <li><strong>2025-11-28</strong> | 《数字图书馆发展趋势》分析报告</li>
+                        <li><strong>2025-11-15</strong> | 《跨学科研究方法》分析报告</li>
+                    </ul>
+                </div>
+                <div class="fade-in">
+                    <div class="profile-section-title">近期智能问答历史</div>
+                    <ul class="bg-slate-50 p-6 rounded-xl shadow-md">
+                        <li><strong>2025-12-11</strong> | 如何评价中国期刊的创新性？</li>
+                        <li><strong>2025-12-05</strong> | 信息检索领域最新研究热点有哪些？</li>
+                        <li><strong>2025-11-30</strong> | 数字图书馆的未来发展方向？</li>
+                    </ul>
+                </div>
+            </div>
+            <a href="admin_center.html" class="btn-primary mt-6 inline-block"><i class="fa fa-cog mr-2"></i>管理员中心</a>
+        </div>
+    </main>
+    <!-- 页脚 -->
+    <footer class="bg-slate-900 text-slate-300 py-8 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center space-x-2 mb-6">
+                    <i class="fa fa-book text-primary text-xl"></i>
+                    <div>
+                        <div class="text-white font-bold">期刊评价系统</div>
+                    </div>
+                </div>
+                <p class="text-sm mb-4">© 2024 基于内容的期刊评价系统. 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="profile.js"></script>
+</body>
+</html>

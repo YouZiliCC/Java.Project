@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期刊分析详情</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="journal_detail.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <style>
+        .info-label { color: #64748b; font-weight: 500; }
+        .info-value { color: #1e293b; font-weight: 600; }
+        .hotword-chart { height: 220px; }
+        .radar-chart-container { max-width: 400px; margin: 0 auto; }
+    </style>
+</head>
+<body class="bg-linear-to-br from-blue-50 via-slate-100 to-indigo-100 font-inter">
+    <!-- 固定导航栏（与其他页面一致，后端可复用） -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-linear-to-r from-cyan-700 via-blue-700 to-indigo-800 shadow-xl text-white border-b-2 border-blue-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <a href="home.html" class="flex items-center space-x-2">
+                        <i class="fa fa-book text-white text-2xl"></i>
+                        <div>
+                            <div class="text-white font-bold text-lg">期刊评价系统</div>
+                            <div class="text-xs text-blue-100">Journal Evaluation System</div>
+                        </div>
+                    </a>
+                </div>
+                <nav class="hidden md:flex space-x-4">
+                    <a href="search.html" class="nav-link font-medium text-white hover:text-yellow-300">期刊查询</a>
+                    <a href="survey.html" class="nav-link text-yellow-300">个人分析</a>
+                    <a href="import_analysis.html" class="nav-link text-blue-100 hover:text-yellow-300">自主导入分析</a>
+                    <a href="smart_qna.html" class="nav-link text-blue-100 hover:text-yellow-300">智能问答</a>
+                    <a href="profile.html" class="nav-link text-blue-100 hover:text-yellow-300">个人中心</a>
+                    <a href="admin_center.html" class="nav-link text-blue-100 hover:text-yellow-300" id="admin-link" style="display: none;">管理中心</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+    <main class="max-w-5xl mx-auto pt-24 pb-12 px-4">
+        <div class="flex flex-col md:flex-row gap-8 bg-white rounded-xl shadow-lg p-8 mb-8">
+            <div class="shrink-0 flex flex-col items-center justify-center w-48">
+                <img id="journal-image" src="img/journal1.png" alt="期刊图片" class="w-40 h-40 object-cover rounded-lg border mb-4">
+                <div class="text-center text-slate-500 text-sm">期刊图片</div>
+            </div>
+            <div class="flex-1">
+                <h1 id="journal-name" class="text-2xl font-bold mb-2">期刊名</h1>
+                <div class="mb-2"><span class="info-label">研究领域：</span><span id="journal-field" class="info-value"></span></div>
+                <div class="mb-2"><span class="info-label">Web of Science分类：</span><span id="journal-wos" class="info-value"></span></div>
+                <div class="mb-2"><span class="info-label">唯一标识：</span><span id="journal-id" class="info-value"></span></div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 class="text-xl font-bold mb-4">近五年研究热点</h2>
+            <div id="hotword-charts" class="grid grid-cols-2 md:grid-cols-5 gap-6"></div>
+        </div>
+        <!-- 期刊对比分析入口与区域 -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                <h2 class="text-xl font-bold mb-2">期刊对比分析</h2>
+                <div class="flex items-center space-x-2 mt-2 md:mt-0">
+                    <label for="compare-select" class="mr-2 text-slate-600">选择对比期刊：</label>
+                    <select id="compare-select" class="border rounded px-3 py-1 text-base">
+                        <option value="">请选择</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="radar-chart-container">
+                    <canvas id="radar-chart-main"></canvas>
+                </div>
+                <div class="radar-chart-container">
+                    <canvas id="radar-chart-compare"></canvas>
+                </div>
+            </div>
+            <div class="mt-8 flex flex-col md:flex-row md:items-center md:space-x-4">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold mb-2">AI对比分析</h3>
+                    <div id="ai-compare-result" class="min-h-[80px] bg-slate-50 rounded p-4 text-slate-700 italic">（请选择对比期刊，AI分析结果将在此展示）</div>
+                </div>
+                <button onclick="doAICompare()" class="btn-primary mt-4 md:mt-0 px-6 py-2 rounded text-white bg-blue-600 hover:bg-blue-700 transition">AI分析</button>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 class="text-xl font-bold mb-4">近年期刊指标</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                    <canvas id="index-bar-chart"></canvas>
+                </div>
+                <div class="radar-chart-container">
+                    <canvas id="radar-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+    <!-- 逻辑已移至 journal_detail.js -->
+    </script>
+    <!-- 后端需实现：journal_data.json的API接口或静态文件，详情页通过id获取数据 -->
+</body>
+</html>
