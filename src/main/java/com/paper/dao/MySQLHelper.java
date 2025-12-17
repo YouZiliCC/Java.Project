@@ -1,4 +1,4 @@
-package com.paper.DBM;
+package com.paper.dao;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -8,43 +8,49 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * MySQL数据库帮助类
+ * 负责数据库连接和SQL执行
+ */
 public class MySQLHelper {
+    
     private Connection connection;
-    
     private static final String DB_PASSWORD = System.getenv("JAVA_DB_PASSWORD");
-    
 
-    public MySQLHelper() throws ClassNotFoundException, SQLException{
-        //System.out.println("密码是"+DB_PASSWORD);
+    public MySQLHelper() throws ClassNotFoundException, SQLException {
         Class.forName("com.mysql.cj.jdbc.Driver");
-        connection = DriverManager.getConnection("jdbc:mysql://39.106.90.206:3306/PAPER_sys","PAPER_sys",DB_PASSWORD);
+        connection = DriverManager.getConnection(
+            "jdbc:mysql://39.106.90.206:3306/PAPER_sys", 
+            "PAPER_sys", 
+            DB_PASSWORD
+        );
     }
     
-    public String executeSQL(String sqlString, Object... params) {
+    /**
+     * 执行更新类SQL（INSERT, UPDATE, DELETE）
+     * @param sql SQL语句
+     * @param params 参数
+     * @return 错误信息（空字符串表示成功）
+     */
+    public String executeSQL(String sql, Object... params) {
         String errorString = "";
         PreparedStatement pstmt = null;
+        
         try {
-            // 1. 确保连接自动提交（关键：防止事务未提交）
-            if (connection.getAutoCommit() == false) {
+            if (!connection.getAutoCommit()) {
                 connection.setAutoCommit(true);
             }
         
-            // 2. 使用PreparedStatement替代Statement
-            pstmt = this.connection.prepareStatement(sqlString);
-            // 3. 设置参数
+            pstmt = connection.prepareStatement(sql);
             setParameters(pstmt, params);
-            // 4. 关键修改：用 executeUpdate() 执行 INSERT，获取受影响行数
             int affectedRows = pstmt.executeUpdate();
         
-            // 5. 验证是否成功插入（受影响行数 > 0 表示成功）
             if (affectedRows == 0) {
                 errorString = "SQL执行成功，但未影响任何数据（可能参数不匹配）";
             }
         
         } catch (SQLException ex) {
-            // 捕获SQL异常，返回具体错误信息（方便排查）
             errorString = "SQL执行异常：" + ex.getMessage();
-            // 若有事务，发生异常时回滚（避免脏数据）
             try {
                 if (connection != null && !connection.isClosed() && !connection.getAutoCommit()) {
                     connection.rollback();
@@ -53,7 +59,6 @@ public class MySQLHelper {
                 errorString += "；回滚事务失败：" + e.getMessage();
             }
         } finally {
-            // 6. 关闭资源
             if (pstmt != null) {
                 try {
                     pstmt.close();
@@ -65,28 +70,34 @@ public class MySQLHelper {
         return errorString;
     }
     
-    // 执行查询的SQL语句，支持参数化查询
-    public Map<String,Object> executeSQLWithSelect(String sqlString, Object... params){
-        Map<String,Object> map = new HashMap<String,Object>();
-        ResultSet resultset = null;
+    /**
+     * 执行查询类SQL（SELECT）
+     * @param sql SQL语句
+     * @param params 参数
+     * @return 包含 "result" (ResultSet) 和 "error" (String) 的Map
+     */
+    public Map<String, Object> executeSQLWithSelect(String sql, Object... params) {
+        Map<String, Object> result = new HashMap<>();
+        ResultSet resultSet = null;
         PreparedStatement pstmt = null;
         String errorString = "";
         
         try {
-            pstmt = this.connection.prepareStatement(sqlString);
-            // 设置参数
+            pstmt = connection.prepareStatement(sql);
             setParameters(pstmt, params);
-            resultset = pstmt.executeQuery();
+            resultSet = pstmt.executeQuery();
         } catch (Exception e) {
             errorString = e.getMessage();
         }
         
-        map.put("result", resultset);
-        map.put("error", errorString);
-        return map;
+        result.put("result", resultSet);
+        result.put("error", errorString);
+        return result;
     }
     
-    // 设置PreparedStatement的参数
+    /**
+     * 设置PreparedStatement的参数
+     */
     private void setParameters(PreparedStatement pstmt, Object... params) throws SQLException {
         if (params != null && params.length > 0) {
             for (int i = 0; i < params.length; i++) {
@@ -95,7 +106,9 @@ public class MySQLHelper {
         }
     }
     
-    // 关闭数据库连接
+    /**
+     * 关闭数据库连接
+     */
     public void close() {
         if (connection != null) {
             try {
