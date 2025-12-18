@@ -38,8 +38,8 @@ public class LegacyController {
     }
 
     /**
-     * 旧版注册接口
-     * @deprecated 请使用 /auth/register
+     * 旧版注册接口（已关闭验证码验证）
+     * @deprecated 请使用 /auth/register 或 /auth/register-direct
      */
     @RequestMapping("/submit")
     @ResponseBody
@@ -51,17 +51,34 @@ public class LegacyController {
         user.setEmail(email);
         
         UserService userService = new UserService();
-        return userService.registerByEmail(user, verifycode);
+        // 邮件验证已关闭，使用直接注册
+        return userService.registerDirect(user);
     }
 
     /**
-     * 旧版验证码接口
-     * @deprecated 请使用 /auth/verifycode
+     * 直接注册接口（无需验证码）
+     */
+    @RequestMapping("/register-direct")
+    @ResponseBody
+    public String registerDirect(String uname, String password, String email) 
+            throws ClassNotFoundException, SQLException {
+        User user = new User();
+        user.setUname(uname);
+        user.setPassword(password);
+        user.setEmail(email);
+        
+        UserService userService = new UserService();
+        return userService.registerDirect(user);
+    }
+
+    /**
+     * 旧版验证码接口（已关闭）
+     * @deprecated 邮件验证功能已关闭
      */
     @RequestMapping("/verifycode")
     @ResponseBody
     public String verifycode(String email) throws ClassNotFoundException, SQLException {
-        UserService userService = new UserService();
-        return userService.sendRegisterCode(email);
+        // 邮件验证已关闭，返回提示信息
+        return "邮件验证功能已关闭，请直接注册";
     }
 }

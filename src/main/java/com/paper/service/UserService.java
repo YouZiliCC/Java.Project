@@ -117,6 +117,7 @@ public class UserService {
     
     /**
      * 通过邮箱和验证码完成注册
+     * 注意：当前已关闭邮件验证，验证码参数可传空或任意值
      */
     public String registerByEmail(User user, String code) throws SQLException {
         // 验证邮箱是否已被注册
@@ -129,6 +130,9 @@ public class UserService {
             return "该用户名已存在";
         }
         
+        // 邮件验证已关闭，跳过验证码检查
+        // 如需开启邮件验证，取消下面代码的注释
+        /*
         // 验证验证码
         String storedCode = verificationCodeMap.get(user.getEmail());
         Long expireTime = codeExpireTimeMap.get(user.getEmail());
@@ -143,6 +147,7 @@ public class UserService {
             codeExpireTimeMap.remove(user.getEmail());
             return "验证码已过期";
         }
+        */
         
         // 执行注册
         String sql = "INSERT INTO USER (uname, password, email) VALUES (?, ?, ?)";
@@ -152,6 +157,47 @@ public class UserService {
         if (result.isEmpty()) {
             verificationCodeMap.remove(user.getEmail());
             codeExpireTimeMap.remove(user.getEmail());
+            return "注册成功";
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 直接注册（无需验证码）
+     */
+    public String registerDirect(User user) throws SQLException {
+        // 验证邮箱是否已被注册（邮箱可选）
+        if (user.getEmail() != null && !user.getEmail().isEmpty() && isEmailExists(user.getEmail())) {
+            return "该邮箱已被注册";
+        }
+        
+        // 验证用户名是否已存在
+        if (isUsernameExists(user.getUname())) {
+            return "该用户名已存在";
+        }
+        
+        // 验证用户名格式
+        if (user.getUname() == null || user.getUname().trim().isEmpty()) {
+            return "用户名不能为空";
+        }
+        
+        if (user.getUname().length() < 2 || user.getUname().length() > 20) {
+            return "用户名长度应在2-20个字符之间";
+        }
+        
+        // 验证密码强度
+        if (user.getPassword() == null || user.getPassword().length() < 6) {
+            return "密码长度不能少于6位";
+        }
+        
+        // 执行注册
+        String sql = "INSERT INTO USER (uname, password, email) VALUES (?, ?, ?)";
+        String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
+        String email = (user.getEmail() != null && !user.getEmail().isEmpty()) ? user.getEmail() : null;
+        String result = mysqlHelper.executeSQL(sql, user.getUname(), hashedPassword, email);
+        
+        if (result.isEmpty()) {
             return "注册成功";
         }
         

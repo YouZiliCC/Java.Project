@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>学术论文管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">
+            <i class="fas fa-graduation-cap"></i>
+            PaperMaster
+        </a>
+        <div class="navbar-menu">
+            <a href="index.html">首页</a>
+            <a href="login.html">登录</a>
+            <a href="register.html" class="btn btn-primary">注册</a>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Search Hero -->
+        <div class="search-hero">
+            <h1 class="search-title">探索学术前沿</h1>
+            <p style="margin-bottom: 2rem; color: #7f8c8d;">海量论文检索与智能分析平台</p>
+            
+            <form id="searchForm" class="search-box">
+                <input type="text" id="searchInput" class="search-input" placeholder="输入关键词、标题或作者..." required>
+                <button type="submit" class="btn btn-primary search-btn">
+                    <i class="fas fa-search"></i> 搜索
+                </button>
+            </form>
+        </div>
+
+        <!-- Loader -->
+        <div id="loader" class="loader"></div>
+
+        <!-- Results Section -->
+        <div id="resultsContainer" class="results-container">
+            <!-- Analysis Panel -->
+            <div id="analysisPanel" class="analysis-panel" style="display: none;">
+                <div class="analysis-title"><i class="fas fa-chart-pie"></i> 数据分析概览</div>
+                <div id="analysisContent"></div>
+            </div>
+
+            <div class="results-header">
+                <h2 style="font-size: 1.5rem;">搜索结果</h2>
+                <span id="statsText" class="stats-text"></span>
+            </div>
+
+            <div id="resultsList">
+                <!-- Results will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

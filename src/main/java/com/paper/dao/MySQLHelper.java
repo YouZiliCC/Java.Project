@@ -8,22 +8,28 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.paper.utils.DatabaseConfig;
+
 /**
- * MySQL数据库帮助类
- * 负责数据库连接和SQL执行
+ * 数据库帮助类
+ * 支持 SQLite（测试）和 MySQL（生产）
  */
 public class MySQLHelper {
     
     private Connection connection;
-    private static final String DB_PASSWORD = System.getenv("JAVA_DB_PASSWORD");
 
     public MySQLHelper() throws ClassNotFoundException, SQLException {
-        Class.forName("com.mysql.cj.jdbc.Driver");
-        connection = DriverManager.getConnection(
-            "jdbc:mysql://39.106.90.206:3306/PAPER_sys", 
-            "PAPER_sys", 
-            DB_PASSWORD
-        );
+        Class.forName(DatabaseConfig.getDriverClassName());
+        
+        if (DatabaseConfig.isSQLiteMode()) {
+            connection = DriverManager.getConnection(DatabaseConfig.getUrl());
+        } else {
+            connection = DriverManager.getConnection(
+                DatabaseConfig.getUrl(),
+                DatabaseConfig.getUsername(),
+                DatabaseConfig.getPassword()
+            );
+        }
     }
     
     /**

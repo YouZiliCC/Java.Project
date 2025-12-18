@@ -37,7 +37,7 @@ public class AuthController {
     }
 
     /**
-     * 用户注册
+     * 用户注册（带验证码，已关闭验证）
      */
     @PostMapping("/register")
     @ResponseBody
@@ -53,12 +53,31 @@ public class AuthController {
     }
 
     /**
-     * 发送验证码
+     * 直接注册（无需验证码）
+     */
+    @PostMapping("/register-direct")
+    @ResponseBody
+    public String registerDirect(String uname, String password, String email) 
+            throws ClassNotFoundException, SQLException {
+        User user = new User();
+        user.setUname(uname);
+        user.setPassword(password);
+        user.setEmail(email);
+        
+        UserService userService = new UserService();
+        return userService.registerDirect(user);
+    }
+
+    /**
+     * 发送验证码（已关闭，保留接口兼容性）
      */
     @PostMapping("/verifycode")
     @ResponseBody
     public String sendVerifyCode(String email) throws ClassNotFoundException, SQLException {
-        UserService userService = new UserService();
-        return userService.sendRegisterCode(email);
+        // 邮件验证已关闭，返回提示信息
+        return "邮件验证功能已关闭，请直接注册";
+        // 如需开启邮件验证，取消下面代码的注释：
+        // UserService userService = new UserService();
+        // return userService.sendRegisterCode(email);
     }
 }
