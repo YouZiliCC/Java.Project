@@ -333,3 +333,376 @@ body {
 .toast.success {
     background-color: #27ae60;
 }
+
+/* Profile Page Styles */
+.profile-container {
+    max-width: 800px;
+    margin: 2rem auto;
+}
+
+.profile-header {
+    text-align: center;
+    padding: 2rem;
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.profile-avatar {
+    font-size: 5rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.profile-header h2 {
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.text-muted {
+    color: var(--text-light);
+}
+
+.profile-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.profile-section {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.profile-section h3 {
+    margin-bottom: 1.5rem;
+    color: var(--primary-color);
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.profile-section h3 i {
+    margin-right: 0.5rem;
+}
+
+.quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.quick-action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1.5rem;
+    background: var(--background-color);
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: var(--text-color);
+    transition: all 0.3s;
+}
+
+.quick-action-card:hover {
+    background: var(--secondary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+.quick-action-card i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Analysis Page Styles */
+.analysis-page {
+    padding: 1rem 0;
+}
+
+.page-title {
+    font-size: 2rem;
+    color: var(--primary-color);
+    margin-bottom: 2rem;
+}
+
+.page-title i {
+    margin-right: 0.5rem;
+}
+
+.analysis-layout {
+    display: grid;
+    grid-template-columns: 1fr 400px;
+    gap: 2rem;
+}
+
+@media (max-width: 1024px) {
+    .analysis-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.card {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 1.5rem;
+}
+
+.card h3 {
+    margin-bottom: 0.5rem;
+    color: var(--primary-color);
+}
+
+.card h3 i {
+    margin-right: 0.5rem;
+}
+
+/* Upload Area */
+.upload-area {
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius);
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    margin: 1rem 0;
+}
+
+.upload-area:hover,
+.upload-area.dragover {
+    border-color: var(--secondary-color);
+    background: rgba(52, 152, 219, 0.05);
+}
+
+.upload-area i {
+    font-size: 3rem;
+    color: var(--secondary-color);
+    margin-bottom: 1rem;
+}
+
+.upload-area p {
+    color: var(--text-light);
+}
+
+.uploaded-files {
+    margin: 1rem 0;
+}
+
+.uploaded-file {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: var(--background-color);
+    border-radius: var(--radius);
+    margin-bottom: 0.5rem;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.file-info i {
+    color: var(--secondary-color);
+}
+
+.file-name {
+    font-weight: 500;
+}
+
+.file-size {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.btn-delete {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    font-size: 1rem;
+    transition: color 0.3s;
+}
+
+.btn-delete:hover {
+    color: #c0392b;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+/* Analysis Results */
+.result-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+    color: white;
+    padding: 1.5rem;
+    border-radius: var(--radius);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.result-section {
+    margin-bottom: 1.5rem;
+}
+
+.result-section h4 {
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+.result-section h4 i {
+    margin-right: 0.5rem;
+}
+
+.highlight-card {
+    background: var(--background-color);
+    padding: 1rem;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--secondary-color);
+}
+
+.distribution-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.distribution-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+    background: var(--background-color);
+    border-radius: 4px;
+}
+
+.dist-label {
+    font-weight: 500;
+}
+
+.dist-value {
+    color: var(--secondary-color);
+    font-weight: bold;
+}
+
+.error-message {
+    color: var(--accent-color);
+    text-align: center;
+    padding: 2rem;
+}
+
+.error-message i {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Chat Styles */
+.chat-card {
+    height: calc(100vh - 200px);
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-top: 1rem;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background: var(--background-color);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    max-height: 400px;
+}
+
+.chat-message {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.chat-message.user {
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--secondary-color);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chat-message.user .message-avatar {
+    background: var(--primary-color);
+}
+
+.message-content {
+    background: var(--card-bg);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius);
+    max-width: 80%;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.chat-message.user .message-content {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.chat-input-area {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.chat-input-area .form-control {
+    flex: 1;
+}
+
+.chat-input-area .btn {
+    padding: 0.75rem 1rem;
+}
+

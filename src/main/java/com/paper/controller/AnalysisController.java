@@ -1,0 +1,235 @@
+package com.paper.controller;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.paper.service.AnalysisService;
+import com.paper.utils.ResponseUtils;
+import com.paper.utils.ValidationUtils;
+
+/**
+ * 期刊分析控制器
+ * <p>处理数据上传、运行分析、AI对话等功能</p>
+ * 
+ * <h3>API 列表：</h3>
+ * <ul>
+ *   <li>POST /analysis/upload - 上传数据文件</li>
+ *   <li>POST /analysis/run - 运行数据分析</li>
+ *   <li>POST /analysis/chat - AI对话</li>
+ *   <li>GET /analysis/files - 获取文件列表</li>
+ *   <li>POST /analysis/delete - 删除文件</li>
+ * </ul>
+ * 
+ * @author PaperMaster Team
+ * @version 1.0
+ * @since 2024-12-18
+ */
+@Controller
+@RequestMapping("/analysis")
+public class AnalysisController {
+
+    /** 上传文件目录 */
+    private static final String UPLOAD_DIR = "uploads/";
+    
+    /** 允许上传的文件扩展名 */
+    private static final List<String> ALLOWED_EXTENSIONS = List.of(".json", ".csv");
+    
+    /** 最大文件大小：10MB */
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+    
+    /**
+     * 上传数据文件
+     * 
+     * @param file 上传的文件（支持JSON、CSV格式，最大10MB）
+     * @return 上传结果，包含filename、originalName、size
+     */
+    @PostMapping("/upload")
+    @ResponseBody
+    public Map<String, Object> uploadFile(@RequestParam("file") MultipartFile file) {
+        // 验证文件是否为空
+        if (file.isEmpty()) {
+            return ResponseUtils.error("请选择要上传的文件");
+        }
+        
+        // 验证文件大小
+        if (file.getSize() > MAX_FILE_SIZE) {
+            return ResponseUtils.error("文件大小不能超过10MB");
+        }
+        
+        // 验证文件扩展名
+        String originalFilename = file.getOriginalFilename();
+        String extension = getFileExtension(originalFilename);
+        if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
+            return ResponseUtils.error("仅支持JSON和CSV格式文件");
+        }
+        
+        try {
+            // 创建上传目录
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            // 生成安全的唯一文件名
+            String uniqueFilename = UUID.randomUUID().toString() + extension;
+            Path filePath = uploadPath.resolve(uniqueFilename);
+            
+            // 保存文件
+            Files.copy(file.getInputStream(), filePath);
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("filename", uniqueFilename);
+            data.put("originalName", originalFilename);
+            data.put("size", file.getSize());
+            return ResponseUtils.success("文件上传成功", data);
+            
+        } catch (IOException e) {
+            return ResponseUtils.error("文件上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 运行数据分析
+     * 
+     * @param filename 可选的文件名，为空则分析数据库数据
+     * @return 分析结果，包含统计信息
+     */
+    @PostMapping("/run")
+    @ResponseBody
+    public Map<String, Object> runAnalysis(@RequestParam(required = false) String filename) {
+        try {
+            AnalysisService analysisService = new AnalysisService();
+            
+            if (ValidationUtils.isNotBlank(filename)) {
+                // 安全检查：防止路径遍历攻击
+                if (!ValidationUtils.isSafeFilename(filename)) {
+                    return ResponseUtils.error("无效的文件名");
+                }
+                return analysisService.analyzeFile(UPLOAD_DIR + filename);
+            } else {
+                return analysisService.analyzeAllData();
+            }
+            
+        } catch (Exception e) {
+            return ResponseUtils.error("数据分析失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * AI对话接口
+     * 
+     * @param request 包含message和可选context的请求体
+     * @return AI回复
+     */
+    @PostMapping("/chat")
+    @ResponseBody
+    public Map<String, Object> chat(@RequestBody Map<String, String> request) {
+        String message = request.get("message");
+        String context = request.get("context");
+        
+        if (ValidationUtils.isBlank(message)) {
+            return ResponseUtils.error("请输入消息");
+        }
+        
+        // 限制消息长度，防止滥用
+        if (message.length() > 1000) {
+            return ResponseUtils.error("消息内容过长");
+        }
+        
+        try {
+            AnalysisService analysisService = new AnalysisService();
+            String reply = analysisService.chat(message.trim(), context);
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("reply", reply);
+            return ResponseUtils.success("success", data);
+            
+        } catch (Exception e) {
+            return ResponseUtils.error("AI对话失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取已上传的文件列表
+     * 
+     * @return 文件名列表
+     */
+    @GetMapping("/files")
+    @ResponseBody
+    public Map<String, Object> listFiles() {
+        try {
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            List<String> fileList = new ArrayList<>();
+            
+            if (Files.exists(uploadPath) && Files.isDirectory(uploadPath)) {
+                Files.list(uploadPath)
+                     .filter(Files::isRegularFile)
+                     .forEach(path -> fileList.add(path.getFileName().toString()));
+            }
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("files", fileList);
+            return ResponseUtils.success("success", data);
+            
+        } catch (IOException e) {
+            return ResponseUtils.error("获取文件列表失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 删除已上传的文件
+     * 
+     * @param filename 要删除的文件名
+     * @return 删除结果
+     */
+    @PostMapping("/delete")
+    @ResponseBody
+    public Map<String, Object> deleteFile(@RequestParam String filename) {
+        // 安全检查：防止路径遍历攻击
+        if (!ValidationUtils.isSafeFilename(filename)) {
+            return ResponseUtils.error("无效的文件名");
+        }
+        
+        try {
+            Path filePath = Paths.get(UPLOAD_DIR, filename);
+            if (Files.exists(filePath)) {
+                Files.delete(filePath);
+                return ResponseUtils.success("文件删除成功");
+            } else {
+                return ResponseUtils.error("文件不存在");
+            }
+        } catch (IOException e) {
+            return ResponseUtils.error("文件删除失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取文件扩展名
+     * 
+     * @param filename 文件名
+     * @return 扩展名（包含点号）
+     */
+    private String getFileExtension(String filename) {
+        if (filename == null || !filename.contains(".")) {
+            return "";
+        }
+        return filename.substring(filename.lastIndexOf("."));
+    }
+}

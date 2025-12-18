@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>期刊分析 - 学术论文管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="index.html" class="navbar-brand">
+            <i class="fas fa-graduation-cap"></i>
+            PaperMaster
+        </a>
+        <div class="navbar-menu">
+            <a href="index.html">首页</a>
+            <a href="profile.html">个人中心</a>
+            <a href="login.html" class="btn btn-primary">登录</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="analysis-page">
+            <h1 class="page-title"><i class="fas fa-chart-pie"></i> 期刊分析</h1>
+            
+            <div class="analysis-layout">
+                <!-- 左侧：上传和分析 -->
+                <div class="analysis-left">
+                    <!-- 上传数据区域 -->
+                    <div class="card upload-card">
+                        <h3><i class="fas fa-upload"></i> 数据上传</h3>
+                        <p class="text-muted">支持 JSON 和 CSV 格式的论文数据文件</p>
+                        
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>点击或拖拽文件到此处上传</p>
+                            <input type="file" id="fileInput" accept=".json,.csv" hidden>
+                        </div>
+                        
+                        <div id="uploadedFiles" class="uploaded-files">
+                            <!-- 已上传文件列表 -->
+                        </div>
+                        
+                        <div class="action-buttons">
+                            <button id="runAnalysisBtn" class="btn btn-primary btn-lg">
+                                <i class="fas fa-play"></i> 运行数据分析
+                            </button>
+                            <button id="analyzeDbBtn" class="btn btn-outline">
+                                <i class="fas fa-database"></i> 分析数据库数据
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 分析结果区域 -->
+                    <div class="card result-card" id="resultCard" style="display: none;">
+                        <h3><i class="fas fa-chart-bar"></i> 分析结果</h3>
+                        <div id="analysisLoader" class="loader" style="display: none;"></div>
+                        <div id="analysisResult">
+                            <!-- 分析结果将在这里显示 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧：AI对话 -->
+                <div class="analysis-right">
+                    <div class="card chat-card">
+                        <h3><i class="fas fa-robot"></i> AI 助手</h3>
+                        <p class="text-muted">有问题？问问AI助手吧！</p>
+                        
+                        <div class="chat-container" id="chatContainer">
+                            <div class="chat-messages" id="chatMessages">
+                                <div class="chat-message bot">
+                                    <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                                    <div class="message-content">
+                                        您好！我是期刊分析AI助手。您可以问我任何关于论文分析的问题，或者让我帮您解读分析结果。
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="chat-input-area">
+                                <input type="text" id="chatInput" class="form-control" placeholder="输入您的问题..." />
+                                <button id="sendBtn" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script src="js/analysis.js"></script>
+</body>
+</html>

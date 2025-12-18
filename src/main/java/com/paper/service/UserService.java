@@ -68,6 +68,56 @@ public class UserService {
         String sql = "UPDATE USER SET password = ? WHERE uname = ?";
         return mysqlHelper.executeSQL(sql, user.getPassword(), user.getUname());
     }
+
+    /**
+     * 修改邮箱
+     */
+    public String updateEmail(String uname, String newEmail) throws SQLException {
+        // 检查新邮箱是否已被其他用户使用
+        if (newEmail != null && !newEmail.isEmpty()) {
+            String checkSql = "SELECT * FROM USER WHERE email = ? AND uname != ?";
+            Map<String, Object> result = mysqlHelper.executeSQLWithSelect(checkSql, newEmail, uname);
+            ResultSet rs = null;
+            try {
+                if (result.get("result") != null) {
+                    rs = (ResultSet) result.get("result");
+                    if (rs.next()) {
+                        return "该邮箱已被其他用户使用";
+                    }
+                }
+            } finally {
+                closeResultSet(rs);
+            }
+        }
+        
+        String sql = "UPDATE USER SET email = ? WHERE uname = ?";
+        String result = mysqlHelper.executeSQL(sql, newEmail, uname);
+        return result.isEmpty() ? "success" : result;
+    }
+
+    /**
+     * 根据用户名获取用户信息
+     */
+    public User getUserByUsername(String uname) throws SQLException {
+        String sql = "SELECT uname, email FROM USER WHERE uname = ?";
+        Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, uname);
+        
+        ResultSet rs = null;
+        try {
+            if (result.get("result") != null) {
+                rs = (ResultSet) result.get("result");
+                if (rs.next()) {
+                    User user = new User();
+                    user.setUname(rs.getString("uname"));
+                    user.setEmail(rs.getString("email"));
+                    return user;
+                }
+            }
+        } finally {
+            closeResultSet(rs);
+        }
+        return null;
+    }
     
     /**
      * 发送注册验证码到邮箱

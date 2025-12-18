@@ -5,6 +5,7 @@ async function handleLogin(event) {
     
     const form = event.target;
     const formData = new FormData(form);
+    const uname = formData.get('uname');
     
     try {
         const response = await fetch('/auth/login', {
@@ -15,6 +16,12 @@ async function handleLogin(event) {
         const result = await response.text(); // Backend returns plain string
         
         if (result.includes('登录成功')) {
+            // 保存用户信息到localStorage
+            localStorage.setItem('currentUser', JSON.stringify({
+                uname: uname,
+                email: ''
+            }));
+            
             showToast('登录成功！正在跳转...', 'success');
             setTimeout(() => {
                 window.location.href = 'index.html';
