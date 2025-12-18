@@ -29,14 +29,14 @@ public class SearchController {
         Map<String, Object> response = new HashMap<>();
         
         // 1. 业务逻辑：查询数据库获取搜索结果
-        List<Paper> paperList = null;
         SearchService searchService = new SearchService();
         long startTime = System.currentTimeMillis();
+        List<Paper> paperList;
         
         try {
             paperList = searchService.searchByTarget(keyword);
         } catch (ClassNotFoundException | SQLException e) {
-            e.printStackTrace();
+            System.err.println("搜索失败: " + e.getMessage());
             response.put("error", "搜索失败: " + e.getMessage());
             return response;
         }

@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -13,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paper.config.EnvConfig;
 import com.paper.dao.MySQLHelper;
 import com.paper.model.Paper;
 import com.paper.utils.ResponseUtils;
@@ -172,12 +172,45 @@ public class AnalysisService {
 
     /**
      * AI对话功能
-     * 注意：这是一个简化的实现，实际生产环境需要接入真正的AI API
+     * 优先使用配置的AI API，如果未配置则使用简单的关键词匹配
      */
     public String chat(String message, String context) {
-        // 简单的关键词匹配回复
-        // 实际生产环境应该接入OpenAI、Azure OpenAI或其他AI服务
+        // 检查是否配置了有效的 AI API Key
+        String apiKey = EnvConfig.getCurrentAIApiKey();
+        boolean hasValidApiKey = apiKey != null && !apiKey.isEmpty() 
+                                 && !apiKey.startsWith("your-") && !apiKey.startsWith("sk-your-");
         
+        // 如果配置了有效的 API Key，调用真正的 AI 服务
+        if (hasValidApiKey || "ollama".equalsIgnoreCase(EnvConfig.getAIProvider())) {
+            try {
+                AIService aiService = new AIService();
+                
+                // 构建系统提示
+                String systemPrompt = "你是一个学术论文分析助手，专门帮助用户理解和分析学术论文数据。" +
+                        "你可以帮助用户解读分析结果、解释统计指标、提供研究建议等。" +
+                        "请用中文回答，保持专业但友好的语气。";
+                
+                // 如果有上下文，添加到提示中
+                if (context != null && !context.isEmpty()) {
+                    systemPrompt += "\n\n当前分析结果上下文：" + context;
+                }
+                
+                return aiService.chat(message, systemPrompt);
+            } catch (Exception e) {
+                System.err.println("AI API 调用失败: " + e.getMessage());
+                // 失败时回退到关键词匹配
+                return fallbackChat(message, context);
+            }
+        }
+        
+        // 未配置 API Key，使用简单的关键词匹配
+        return fallbackChat(message, context);
+    }
+    
+    /**
+     * 备用的简单关键词匹配回复
+     */
+    private String fallbackChat(String message, String context) {
         String lowerMessage = message.toLowerCase();
         
         if (lowerMessage.contains("论文") || lowerMessage.contains("paper")) {
@@ -197,14 +230,14 @@ public class AnalysisService {
         }
         
         if (lowerMessage.contains("帮助") || lowerMessage.contains("help")) {
-            return "欢迎使用期刊分析系统！\n\n主要功能：\n1. 数据上传：上传您的论文数据\n2. 数据分析：运行统计分析\n3. AI助手：解答您的问题\n\n您可以问我任何关于论文分析的问题！";
+            return "欢迎使用期刊分析系统！\n\n主要功能：\n1. 数据上传：上传您的论文数据\n2. 数据分析：运行统计分析\n3. AI助手：解答您的问题\n\n提示：配置 AI API Key 后可获得更智能的对话体验。\n\n您可以问我任何关于论文分析的问题！";
         }
         
         if (context != null && !context.isEmpty()) {
             return "根据当前的分析结果，" + context + "。您还有什么想了解的吗？";
         }
         
-        return "感谢您的提问！我是期刊分析AI助手，可以帮助您理解数据分析结果、解答论文相关问题。请问有什么可以帮助您的？";
+        return "感谢您的提问！我是期刊分析AI助手。\n\n提示：目前使用的是简单问答模式。如需更智能的AI对话，请在 .env 文件中配置 AI API Key（支持 OpenAI、DeepSeek、Gemini、Claude 等）。\n\n请问有什么可以帮助您的？";
     }
 
     /**
@@ -225,7 +258,10 @@ public class AnalysisService {
                     paper.setTitle(rs.getString("title"));
                     paper.setAuthor(rs.getString("author"));
                     paper.setJournal(rs.getString("journal"));
-                    paper.setPublishDate(rs.getString("publish_date"));
+                    java.sql.Date publishDate = rs.getDate("publish_date");
+                    if (publishDate != null) {
+                        paper.setPublishDate(publishDate.toLocalDate());
+                    }
                     paper.setCitations(rs.getInt("citations"));
                     paper.setRefs(rs.getInt("refs"));
                     paper.setTarget(rs.getString("target"));

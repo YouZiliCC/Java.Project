@@ -167,6 +167,33 @@ public class AnalysisController {
     }
 
     /**
+     * 获取 AI 配置状态
+     * 
+     * @return AI 配置信息，包括是否启用、提供商等
+     */
+    @GetMapping("/ai-status")
+    @ResponseBody
+    public Map<String, Object> getAIStatus() {
+        Map<String, Object> data = new HashMap<>();
+        
+        String provider = com.paper.config.EnvConfig.getAIProvider();
+        String apiKey = com.paper.config.EnvConfig.getCurrentAIApiKey();
+        boolean isConfigured = (apiKey != null && !apiKey.isEmpty() 
+                               && !apiKey.startsWith("your-") && !apiKey.startsWith("sk-your-"))
+                               || "ollama".equalsIgnoreCase(provider);
+        
+        data.put("configured", isConfigured);
+        data.put("provider", provider);
+        data.put("model", com.paper.config.EnvConfig.getCurrentAIModel());
+        
+        if (!isConfigured) {
+            data.put("message", "AI 功能未启用。请在 .env 文件中配置 " + provider.toUpperCase() + "_API_KEY");
+        }
+        
+        return ResponseUtils.success("success", data);
+    }
+
+    /**
      * 获取已上传的文件列表
      * 
      * @return 文件名列表

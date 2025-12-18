@@ -22,6 +22,7 @@ public class LegacyController {
      * 旧版登录接口
      * @deprecated 请使用 /auth/login
      */
+    @Deprecated
     @RequestMapping("/login")
     @ResponseBody
     public String login(String uname, String password) throws ClassNotFoundException, SQLException {
@@ -41,6 +42,7 @@ public class LegacyController {
      * 旧版注册接口（已关闭验证码验证）
      * @deprecated 请使用 /auth/register 或 /auth/register-direct
      */
+    @Deprecated
     @RequestMapping("/submit")
     @ResponseBody
     public String submit(String uname, String password, String email, String verifycode) 
@@ -70,11 +72,11 @@ public class LegacyController {
         UserService userService = new UserService();
         return userService.registerDirect(user);
     }
-
     /**
      * 旧版验证码接口（已关闭）
      * @deprecated 邮件验证功能已关闭
      */
+    @Deprecated
     @RequestMapping("/verifycode")
     @ResponseBody
     public String verifycode(String email) throws ClassNotFoundException, SQLException {

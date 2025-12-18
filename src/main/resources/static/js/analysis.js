@@ -306,9 +306,60 @@ function addChatMessage(content, type) {
     container.scrollTop = container.scrollHeight;
 }
 
+// 检查 AI 配置状态
+async function checkAIStatus() {
+    try {
+        const response = await fetch('/analysis/ai-status');
+        const data = await response.json();
+        
+        if (data.success && data.data) {
+            const aiStatus = data.data;
+            const chatCard = document.querySelector('.chat-card h3');
+            
+            if (!aiStatus.configured) {
+                // 添加未配置提示
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'ai-warning';
+                warningDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>AI 功能未启用（使用简单问答模式）</span>
+                    <small>配置 ${aiStatus.provider.toUpperCase()}_API_KEY 以启用智能对话</small>
+                `;
+                warningDiv.style.cssText = 'background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px; display: flex; flex-direction: column; gap: 4px;';
+                
+                const cardHeader = document.querySelector('.chat-card > h3');
+                if (cardHeader && cardHeader.nextSibling) {
+                    cardHeader.parentNode.insertBefore(warningDiv, cardHeader.nextSibling.nextSibling);
+                }
+                
+                // 更新欢迎消息
+                const welcomeMsg = document.querySelector('.chat-message.bot .message-content');
+                if (welcomeMsg) {
+                    welcomeMsg.innerHTML = `您好！我是期刊分析助手。<br><br>
+                        <span style="color: #856404; font-size: 12px;">
+                            ⚠️ 当前为简单问答模式。配置 AI API Key 可获得更智能的对话体验。
+                        </span>`;
+                }
+            } else {
+                // 已配置，显示提供商信息
+                const welcomeMsg = document.querySelector('.chat-message.bot .message-content');
+                if (welcomeMsg) {
+                    welcomeMsg.innerHTML = `您好！我是期刊分析AI助手，由 <strong>${aiStatus.provider}</strong> 提供支持。<br>
+                        您可以问我任何关于论文分析的问题，或者让我帮您解读分析结果。`;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('检查AI状态失败:', error);
+    }
+}
+
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     initUpload();
+    
+    // 检查 AI 配置状态
+    checkAIStatus();
     
     // 运行分析按钮
     document.getElementById('runAnalysisBtn').addEventListener('click', () => {

@@ -9,6 +9,7 @@ import java.util.Random;
 
 import org.mindrot.jbcrypt.BCrypt;
 
+import com.paper.config.EnvConfig;
 import com.paper.dao.MySQLHelper;
 import com.paper.model.User;
 
@@ -27,13 +28,15 @@ import jakarta.mail.internet.MimeMessage;
  */
 public class UserService {
     
-    private MySQLHelper mysqlHelper;
-    private static final String QQ_MAIL_PASSWORD = System.getenv("QQ_MAIL_PASSWORD");
+    private final MySQLHelper mysqlHelper;
     
     // 存储验证码和邮箱的映射关系
-    private static Map<String, String> verificationCodeMap = new HashMap<>();
+    // 虽然当前版本邮件验证已关闭，但保留此代码以支持未来启用验证码功能
+    @SuppressWarnings("MismatchedCollectionQueryUpdate")
+    private static final Map<String, String> verificationCodeMap = new HashMap<>();
     // 存储验证码创建时间
-    private static Map<String, Long> codeExpireTimeMap = new HashMap<>();
+    @SuppressWarnings("MismatchedCollectionQueryUpdate")
+    private static final Map<String, Long> codeExpireTimeMap = new HashMap<>();
     
     public UserService() throws ClassNotFoundException, SQLException {
         this.mysqlHelper = new MySQLHelper();
@@ -123,6 +126,11 @@ public class UserService {
      * 发送注册验证码到邮箱
      */
     public String sendRegisterCode(String email) {
+        // 检查邮件服务是否启用
+        if (!EnvConfig.isMailEnabled()) {
+            return "邮件服务未启用，请直接注册";
+        }
+        
         String code = generateRandomCode();
         
         // 清理之前的验证码记录
@@ -133,16 +141,16 @@ public class UserService {
         verificationCodeMap.put(email, code);
         codeExpireTimeMap.put(email, System.currentTimeMillis());
         
-        // 邮件配置
+        // 邮件配置 - 使用集中配置
         Properties props = new Properties();
-        props.put("mail.smtp.host", "smtp.qq.com");
-        props.put("mail.smtp.port", "465");
+        props.put("mail.smtp.host", EnvConfig.get(EnvConfig.MAIL_HOST, "smtp.qq.com"));
+        props.put("mail.smtp.port", EnvConfig.get(EnvConfig.MAIL_PORT, "465"));
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.ssl.enable", "true");
         props.put("mail.debug", "true");
         
-        final String fromEmail = "2878580863@qq.com";
-        final String password = QQ_MAIL_PASSWORD;
+        final String fromEmail = EnvConfig.get(EnvConfig.MAIL_USERNAME);
+        final String password = EnvConfig.get(EnvConfig.MAIL_PASSWORD);
         
         Session session = Session.getInstance(props, new Authenticator() {
             @Override
@@ -161,6 +169,7 @@ public class UserService {
             Transport.send(message);
             return "发送成功";
         } catch (MessagingException e) {
+            System.err.println("验证码发送失败: " + e.getMessage());
             return "验证码发送失败：" + e.getMessage();
         }
     }
@@ -309,7 +318,7 @@ public class UserService {
             try {
                 rs.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                System.err.println("关闭ResultSet失败: " + e.getMessage());
             }
         }
     }

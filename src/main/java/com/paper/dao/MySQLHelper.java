@@ -16,7 +16,7 @@ import com.paper.utils.DatabaseConfig;
  */
 public class MySQLHelper {
     
-    private Connection connection;
+    private final Connection connection;
 
     public MySQLHelper() throws ClassNotFoundException, SQLException {
         Class.forName(DatabaseConfig.getDriverClassName());
@@ -55,7 +55,7 @@ public class MySQLHelper {
                 errorString = "SQL执行成功，但未影响任何数据（可能参数不匹配）";
             }
         
-        } catch (SQLException ex) {
+        } catch (SQLException | NumberFormatException ex) {
             errorString = "SQL执行异常：" + ex.getMessage();
             try {
                 if (connection != null && !connection.isClosed() && !connection.getAutoCommit()) {
@@ -84,19 +84,17 @@ public class MySQLHelper {
      */
     public Map<String, Object> executeSQLWithSelect(String sql, Object... params) {
         Map<String, Object> result = new HashMap<>();
-        ResultSet resultSet = null;
-        PreparedStatement pstmt = null;
         String errorString = "";
         
         try {
-            pstmt = connection.prepareStatement(sql);
+            PreparedStatement pstmt = connection.prepareStatement(sql);
             setParameters(pstmt, params);
-            resultSet = pstmt.executeQuery();
-        } catch (Exception e) {
+            ResultSet resultSet = pstmt.executeQuery();
+            result.put("result", resultSet);
+        } catch (SQLException | NumberFormatException e) {
             errorString = e.getMessage();
         }
         
-        result.put("result", resultSet);
         result.put("error", errorString);
         return result;
     }
@@ -120,7 +118,7 @@ public class MySQLHelper {
             try {
                 connection.close();
             } catch (SQLException e) {
-                e.printStackTrace();
+                System.err.println("关闭数据库连接失败: " + e.getMessage());
             }
         }
     }

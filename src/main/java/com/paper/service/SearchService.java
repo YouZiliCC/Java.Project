@@ -59,7 +59,7 @@ public class SearchService {
                 try {
                     rs.close();
                 } catch (SQLException e) {
-                    e.printStackTrace();
+                    System.err.println("关闭ResultSet失败: " + e.getMessage());
                 }
             }
         }

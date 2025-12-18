@@ -13,10 +13,13 @@
             <i class="fas fa-graduation-cap"></i>
             PaperMaster
         </a>
-        <div class="navbar-menu">
+        <div class="navbar-menu" id="navMenu">
             <a href="index.html">首页</a>
-            <a href="profile.html">个人中心</a>
-            <a href="login.html" class="btn btn-primary">登录</a>
+            <a href="analysis.html">期刊分析</a>
+            <a href="login.html" id="loginLink">登录</a>
+            <a href="register.html" id="registerLink" class="btn btn-primary">注册</a>
+            <a href="profile.html" id="profileLink" style="display:none;">个人中心</a>
+            <a href="#" id="logoutLink" class="btn btn-outline" style="display:none;">退出</a>
         </div>
     </nav>
 
@@ -93,5 +96,23 @@
 
     <script src="js/main.js"></script>
     <script src="js/analysis.js"></script>
+    <script>
+        // 检查登录状态更新导航
+        document.addEventListener('DOMContentLoaded', () => {
+            const user = localStorage.getItem('currentUser');
+            if (user) {
+                document.getElementById('loginLink').style.display = 'none';
+                document.getElementById('registerLink').style.display = 'none';
+                document.getElementById('profileLink').style.display = 'inline';
+                document.getElementById('logoutLink').style.display = 'inline';
+                
+                document.getElementById('logoutLink').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('currentUser');
+                    location.reload();
+                });
+            }
+        });
+    </script>
 </body>
 </html>
