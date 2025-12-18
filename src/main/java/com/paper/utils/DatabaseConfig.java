@@ -13,6 +13,7 @@ public class DatabaseConfig {
     public static final String SQLITE_URL = "jdbc:sqlite:paper_system.db";
     public static final String SQLITE_DRIVER = "org.sqlite.JDBC";
     
+    // TODO: .env 文件中配置数据库连接信息
     // MySQL 配置（生产用）
     public static final String MYSQL_URL = "jdbc:mysql://localhost:3306/paper_sys?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
     public static final String MYSQL_DRIVER = "com.mysql.cj.jdbc.Driver";

@@ -167,17 +167,7 @@ public class UserService {
      * 直接注册（无需验证码）
      */
     public String registerDirect(User user) throws SQLException {
-        // 验证邮箱是否已被注册（邮箱可选）
-        if (user.getEmail() != null && !user.getEmail().isEmpty() && isEmailExists(user.getEmail())) {
-            return "该邮箱已被注册";
-        }
-        
-        // 验证用户名是否已存在
-        if (isUsernameExists(user.getUname())) {
-            return "该用户名已存在";
-        }
-        
-        // 验证用户名格式
+        // 1. 先验证用户名格式（必须先检查格式，再查数据库）
         if (user.getUname() == null || user.getUname().trim().isEmpty()) {
             return "用户名不能为空";
         }
@@ -186,9 +176,19 @@ public class UserService {
             return "用户名长度应在2-20个字符之间";
         }
         
-        // 验证密码强度
+        // 2. 验证密码强度
         if (user.getPassword() == null || user.getPassword().length() < 6) {
             return "密码长度不能少于6位";
+        }
+        
+        // 3. 验证用户名是否已存在
+        if (isUsernameExists(user.getUname())) {
+            return "该用户名已存在";
+        }
+        
+        // 4. 验证邮箱是否已被注册（邮箱可选）
+        if (user.getEmail() != null && !user.getEmail().isEmpty() && isEmailExists(user.getEmail())) {
+            return "该邮箱已被注册";
         }
         
         // 执行注册

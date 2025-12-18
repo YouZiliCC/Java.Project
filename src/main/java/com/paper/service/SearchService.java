@@ -24,7 +24,7 @@ public class SearchService {
      */
     public List<Paper> searchByTarget(String keyword) throws ClassNotFoundException, SQLException {
         MySQLHelper mysqlHelper = new MySQLHelper();
-        String sql = "SELECT * FROM paper WHERE target = ?";
+        String sql = "SELECT * FROM PAPER WHERE target = ?";
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, keyword);
         
         List<Paper> paperList = new ArrayList<>();
@@ -40,8 +40,12 @@ public class SearchService {
                 paper.setTarget(rs.getString("target"));
                 paper.setAuthor(rs.getString("author"));
                 paper.setTitle(rs.getString("title"));
-                paper.setAbstractText(rs.getString("abstract"));
-                paper.setPublishDate(rs.getDate("publish_date").toLocalDate());
+                paper.setAbstractText(rs.getString("abstract_text"));
+                // 处理可能为null的日期
+                java.sql.Date publishDate = rs.getDate("publish_date");
+                if (publishDate != null) {
+                    paper.setPublishDate(publishDate.toLocalDate());
+                }
                 paper.setJournal(rs.getString("journal"));
                 paper.setVolume(rs.getInt("volume"));
                 paper.setIssue(rs.getInt("issue"));
