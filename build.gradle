@@ -37,11 +37,11 @@ dependencies {
     implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
 	implementation 'com.sun.mail:jakarta.mail:2.0.1'
     implementation 'com.sun.activation:jakarta.activation:2.0.1'
-	// 添加 MySQL 驱动依赖
-    runtimeOnly 'mysql:mysql-connector-java:8.0.30'
-    // 添加 SQLite 驱动依赖（测试用）
-    implementation 'org.xerial:sqlite-jdbc:3.45.1.0'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
+	// 数据库驱动
+    runtimeOnly 'mysql:mysql-connector-java:8.0.30'  // MySQL
+    implementation 'org.xerial:sqlite-jdbc:3.45.1.0' // SQLite（开发测试用）
+    
+    // 模板引擎
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     
     // Jackson库，用于JSON序列化和反序列化

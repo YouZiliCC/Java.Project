@@ -7,7 +7,17 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### STS ###
+### IDE ###
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+# Eclipse / STS
 .apt_generated
 .classpath
 .factorypath
@@ -19,33 +29,23 @@ bin/
 !**/src/main/**/bin/
 !**/src/test/**/bin/
 
-### IntelliJ IDEA ###
-.idea/
-*.iws
-*.iml
-*.ipr
-out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
 /nbdist/
 /.nb-gradle/
 
-### VS Code ###
+# VS Code
 .vscode/
 
 ### OS Generated ###
 .DS_Store
-.DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
 Thumbs.db
+ehthumbs.db
 desktop.ini
 
 ### Logs ###
@@ -70,12 +70,23 @@ hs_err_pid*
 *.swp
 *~
 
-### Python cache (for python scripts in resources) ###
+### Python ###
 __pycache__/
 *.py[cod]
 *$py.class
 .Python
 *.pyo
+.venv/
+venv/
 
+### Environment ###
 .env
+*.env.local
+
+### Database ###
 *.db
+*.sqlite
+*.sqlite3
+
+### Uploads ###
+uploads/

@@ -6,47 +6,56 @@ PaperMaster 是一个基于 Spring Boot 的学术论文管理与分析系统，�
 
 ## 技术栈
 
-- **后端**: Java 17 + Spring Boot 3.x
-- **数据库**: MySQL / SQLite
+- **后端**: Java 21 + Spring Boot 3.5
+- **数据库**: MySQL 8.x / SQLite（开发测试）
 - **前端**: HTML5 + CSS3 + JavaScript
 - **数据分析**: Python 3.x
 - **密码加密**: BCrypt
+- **构建工具**: Gradle
 
 ## 项目结构
 
 ```
-src/
-├── main/
+paper-master/
+├── src/main/
 │   ├── java/com/paper/
-│   │   ├── controller/     # 控制器层
+│   │   ├── PaperApplication.java    # 应用入口
+│   │   ├── config/                  # 配置类
+│   │   │   └── EnvConfig.java       # 环境配置管理
+│   │   ├── controller/              # 控制器层
 │   │   │   ├── AuthController.java      # 认证（登录/注册）
 │   │   │   ├── UserController.java      # 用户管理
 │   │   │   ├── SearchController.java    # 论文搜索
 │   │   │   └── AnalysisController.java  # 数据分析
-│   │   ├── service/        # 服务层
+│   │   ├── service/                 # 服务层
 │   │   │   ├── UserService.java         # 用户业务逻辑
 │   │   │   ├── SearchService.java       # 搜索业务逻辑
 │   │   │   ├── AnalysisService.java     # 分析业务逻辑
+│   │   │   ├── AIService.java           # AI对话服务
 │   │   │   └── PythonCaller.java        # Python脚本调用
-│   │   ├── dao/            # 数据访问层
-│   │   ├── model/          # 数据模型
-│   │   └── utils/          # 工具类
+│   │   ├── dao/                     # 数据访问层
+│   │   │   └── MySQLHelper.java         # 数据库操作工具
+│   │   ├── model/                   # 数据模型
+│   │   │   ├── User.java / Paper.java / Author.java / Keyword.java
+│   │   └── utils/                   # 工具类
+│   │       ├── DatabaseConfig.java      # 数据库配置
+│   │       ├── DatabaseInitializer.java # 数据库初始化
 │   │       ├── ResponseUtils.java       # 响应工具
 │   │       └── ValidationUtils.java     # 验证工具
 │   └── resources/
-│       ├── static/         # 前端静态资源
-│       │   ├── index.html              # 首页
-│       │   ├── login.html              # 登录页
-│       │   ├── register.html           # 注册页
-│       │   ├── profile.html            # 个人中心
-│       │   ├── analysis.html           # 期刊分析
-│       │   ├── css/                    # 样式文件
-│       │   └── js/                     # JavaScript
-│       ├── python/         # Python分析脚本
-│       └── sql/            # 数据库初始化脚本
-└── test/                   # 单元测试
-docs/
-└── API.md                  # API文档
+│       ├── application.properties   # 应用配置
+│       ├── static/                  # 前端静态资源
+│       │   ├── *.html               # 页面文件
+│       │   ├── css/style.css        # 样式
+│       │   └── js/                  # JavaScript
+│       ├── python/                  # Python分析脚本
+│       │   └── data_analysis.py
+│       └── sql/                     # 数据库初始化脚本
+│           ├── init_mysql.sql
+│           └── init_sqlite.sql
+├── docs/API.md                      # API文档
+├── .env.example                     # 环境变量示例
+└── build.gradle                     # Gradle构建配置
 ```
 
 ## 功能模块
