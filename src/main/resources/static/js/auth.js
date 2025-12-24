@@ -10,10 +10,10 @@ async function handleLogin(event) {
     try {
         const response = await fetch('/auth/login', {
             method: 'POST',
-            body: formData // Send as multipart/form-data or x-www-form-urlencoded automatically
+            body: formData
         });
         
-        const result = await response.text(); // Backend returns plain string
+        const result = await response.text();
         
         if (result.includes('登录成功')) {
             // 保存用户信息到localStorage
@@ -23,8 +23,13 @@ async function handleLogin(event) {
             }));
             
             showToast('登录成功！正在跳转...', 'success');
+            
+            // 检查是否有重定向参数
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirect = urlParams.get('redirect');
+            
             setTimeout(() => {
-                window.location.href = 'index.html';
+                window.location.href = redirect || 'index.html';
             }, 1000);
         } else {
             showToast(result, 'error');

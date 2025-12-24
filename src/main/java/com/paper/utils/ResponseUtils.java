@@ -2,15 +2,10 @@ package com.paper.utils;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * API响应工具类
- * 统一API响应格式，减少重复代码
- * 
- * @author PaperMaster Team
- * @version 1.0
- * @since 2024-12-18
+ * 统一API响应格式
  */
 public class ResponseUtils {
 

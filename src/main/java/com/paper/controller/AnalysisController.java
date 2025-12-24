@@ -1,6 +1,5 @@
 package com.paper.controller;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -176,18 +175,15 @@ public class AnalysisController {
     public Map<String, Object> getAIStatus() {
         Map<String, Object> data = new HashMap<>();
         
-        String provider = com.paper.config.EnvConfig.getAIProvider();
-        String apiKey = com.paper.config.EnvConfig.getCurrentAIApiKey();
-        boolean isConfigured = (apiKey != null && !apiKey.isEmpty() 
-                               && !apiKey.startsWith("your-") && !apiKey.startsWith("sk-your-"))
-                               || "ollama".equalsIgnoreCase(provider);
+        boolean isConfigured = com.paper.config.EnvConfig.hasValidDeepSeekKey();
         
         data.put("configured", isConfigured);
-        data.put("provider", provider);
-        data.put("model", com.paper.config.EnvConfig.getCurrentAIModel());
+        data.put("provider", "deepseek");
+        data.put("model", com.paper.config.EnvConfig.get(
+            com.paper.config.EnvConfig.DEEPSEEK_MODEL, "deepseek-chat"));
         
         if (!isConfigured) {
-            data.put("message", "AI 功能未启用。请在 .env 文件中配置 " + provider.toUpperCase() + "_API_KEY");
+            data.put("message", "AI 功能未启用。请在 .env 文件中配置 DEEPSEEK_API_KEY");
         }
         
         return ResponseUtils.success("success", data);

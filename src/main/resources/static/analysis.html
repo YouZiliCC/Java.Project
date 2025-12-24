@@ -3,25 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>期刊分析 - 学术论文管理系统</title>
+    <title>期刊分析 - PaperMaster</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <nav class="navbar">
-        <a href="index.html" class="navbar-brand">
-            <i class="fas fa-graduation-cap"></i>
-            PaperMaster
-        </a>
-        <div class="navbar-menu" id="navMenu">
-            <a href="index.html">首页</a>
-            <a href="analysis.html">期刊分析</a>
-            <a href="login.html" id="loginLink">登录</a>
-            <a href="register.html" id="registerLink" class="btn btn-primary">注册</a>
-            <a href="profile.html" id="profileLink" style="display:none;">个人中心</a>
-            <a href="#" id="logoutLink" class="btn btn-outline" style="display:none;">退出</a>
-        </div>
-    </nav>
+    <!-- 导航栏容器 -->
+    <div id="navbar-container"></div>
 
     <div class="container">
         <div class="analysis-page">
@@ -30,7 +18,6 @@
             <div class="analysis-layout">
                 <!-- 左侧：上传和分析 -->
                 <div class="analysis-left">
-                    <!-- 上传数据区域 -->
                     <div class="card upload-card">
                         <h3><i class="fas fa-upload"></i> 数据上传</h3>
                         <p class="text-muted">支持 JSON 和 CSV 格式的论文数据文件</p>
@@ -41,9 +28,7 @@
                             <input type="file" id="fileInput" accept=".json,.csv" hidden>
                         </div>
                         
-                        <div id="uploadedFiles" class="uploaded-files">
-                            <!-- 已上传文件列表 -->
-                        </div>
+                        <div id="uploadedFiles" class="uploaded-files"></div>
                         
                         <div class="action-buttons">
                             <button id="runAnalysisBtn" class="btn btn-primary btn-lg">
@@ -55,13 +40,10 @@
                         </div>
                     </div>
 
-                    <!-- 分析结果区域 -->
                     <div class="card result-card" id="resultCard" style="display: none;">
                         <h3><i class="fas fa-chart-bar"></i> 分析结果</h3>
                         <div id="analysisLoader" class="loader" style="display: none;"></div>
-                        <div id="analysisResult">
-                            <!-- 分析结果将在这里显示 -->
-                        </div>
+                        <div id="analysisResult"></div>
                     </div>
                 </div>
 
@@ -76,7 +58,7 @@
                                 <div class="chat-message bot">
                                     <div class="message-avatar"><i class="fas fa-robot"></i></div>
                                     <div class="message-content">
-                                        您好！我是期刊分析AI助手。您可以问我任何关于论文分析的问题，或者让我帮您解读分析结果。
+                                        您好！我是期刊分析AI助手。您可以问我任何关于论文分析的问题。
                                     </div>
                                 </div>
                             </div>
@@ -94,24 +76,12 @@
         </div>
     </div>
 
-    <script src="js/main.js"></script>
+    <script src="js/components.js"></script>
     <script src="js/analysis.js"></script>
     <script>
-        // 检查登录状态更新导航
+        // 需要登录才能访问
         document.addEventListener('DOMContentLoaded', () => {
-            const user = localStorage.getItem('currentUser');
-            if (user) {
-                document.getElementById('loginLink').style.display = 'none';
-                document.getElementById('registerLink').style.display = 'none';
-                document.getElementById('profileLink').style.display = 'inline';
-                document.getElementById('logoutLink').style.display = 'inline';
-                
-                document.getElementById('logoutLink').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('currentUser');
-                    location.reload();
-                });
-            }
+            if (!requireLogin('analysis.html')) return;
         });
     </script>
 </body>

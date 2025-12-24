@@ -3,79 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>学术论文管理系统</title>
+    <title>PaperMaster - 学术论文管理系统</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar">
-        <a href="index.html" class="navbar-brand">
-            <i class="fas fa-graduation-cap"></i>
-            PaperMaster
-        </a>
-        <div class="navbar-menu" id="navMenu">
-            <a href="index.html">首页</a>
-            <a href="analysis.html">期刊分析</a>
-            <a href="login.html" id="loginLink">登录</a>
-            <a href="register.html" id="registerLink" class="btn btn-primary">注册</a>
-            <a href="profile.html" id="profileLink" style="display:none;">个人中心</a>
-            <a href="#" id="logoutLink" class="btn btn-outline" style="display:none;">退出</a>
-        </div>
-    </nav>
+    <!-- 导航栏容器 -->
+    <div id="navbar-container"></div>
 
-    <!-- Main Content -->
+    <!-- 主内容 -->
     <div class="container">
-        <!-- Search Hero -->
         <div class="search-hero">
-            <h1 class="search-title">探索学术前沿</h1>
-            <p style="margin-bottom: 2rem; color: #7f8c8d;">海量论文检索与智能分析平台</p>
-            
-            <form id="searchForm" class="search-box">
-                <input type="text" id="searchInput" class="search-input" placeholder="输入关键词、标题或作者..." required>
-                <button type="submit" class="btn btn-primary search-btn">
-                    <i class="fas fa-search"></i> 搜索
-                </button>
-            </form>
+            <h1 class="search-title">PaperMaster</h1>
+            <p style="margin-bottom: 2rem; color: #7f8c8d; font-size: 1.2rem;">学术论文管理与智能分析平台</p>
         </div>
 
-        <!-- Loader -->
-        <div id="loader" class="loader"></div>
-
-        <!-- Results Section -->
-        <div id="resultsContainer" class="results-container">
-            <!-- Analysis Panel -->
-            <div id="analysisPanel" class="analysis-panel" style="display: none;">
-                <div class="analysis-title"><i class="fas fa-chart-pie"></i> 数据分析概览</div>
-                <div id="analysisContent"></div>
+        <div class="features-section">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-chart-pie"></i></div>
+                <h3>期刊分析</h3>
+                <p>上传论文数据，获取详细的统计分析报告，包括引用分析、领域分布等。</p>
+                <a href="analysis.html" class="btn btn-primary feature-btn" data-require-login="true">开始分析</a>
             </div>
-
-            <div class="results-header">
-                <h2 style="font-size: 1.5rem;">搜索结果</h2>
-                <span id="statsText" class="stats-text"></span>
+            
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-robot"></i></div>
+                <h3>AI 助手</h3>
+                <p>智能对话助手，帮助您解读分析结果、解答学术问题。</p>
+                <a href="analysis.html" class="btn btn-outline feature-btn" data-require-login="true">立即体验</a>
             </div>
-
-            <div id="resultsList">
-                <!-- Results will be injected here -->
+            
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-user-shield"></i></div>
+                <h3>个人中心</h3>
+                <p>管理您的账户信息，查看历史分析记录。</p>
+                <a href="profile.html" class="btn btn-outline feature-btn" data-require-login="true">进入中心</a>
             </div>
         </div>
     </div>
 
-    <script src="js/main.js"></script>
+    <style>
+        .features-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        .feature-card {
+            background: white;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 1rem;
+            background: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .feature-icon i { font-size: 1.5rem; color: white; }
+        .feature-card h3 { margin-bottom: 0.8rem; color: #2c3e50; }
+        .feature-card p { color: #7f8c8d; margin-bottom: 1.2rem; line-height: 1.5; font-size: 0.95rem; }
+    </style>
+
+    <script src="js/components.js"></script>
     <script>
-        // 检查登录状态更新导航
         document.addEventListener('DOMContentLoaded', () => {
-            const user = localStorage.getItem('currentUser');
-            if (user) {
-                document.getElementById('loginLink').style.display = 'none';
-                document.getElementById('registerLink').style.display = 'none';
-                document.getElementById('profileLink').style.display = 'inline';
-                document.getElementById('logoutLink').style.display = 'inline';
-                
-                document.getElementById('logoutLink').addEventListener('click', (e) => {
-                    e.preventDefault();
-                    localStorage.removeItem('currentUser');
-                    location.reload();
+            // 未登录时修改按钮
+            if (!isLoggedIn()) {
+                document.querySelectorAll('.feature-btn').forEach(btn => {
+                    btn.textContent = '登录后使用';
+                    btn.href = 'login.html';
+                    btn.classList.remove('btn-primary');
+                    btn.classList.add('btn-outline');
                 });
             }
         });
