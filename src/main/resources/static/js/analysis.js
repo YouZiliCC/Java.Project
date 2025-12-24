@@ -3,24 +3,25 @@
 let uploadedFilename = null;
 let analysisContext = null;
 
+// 获取当前用户名
+function getUsername() {
+    const user = getCurrentUser();
+    return user ? user.uname : null;
+}
+
 // 文件上传处理
 function initUpload() {
     const uploadArea = document.getElementById('uploadArea');
     const fileInput = document.getElementById('fileInput');
     
-    // 点击上传
-    uploadArea.addEventListener('click', () => {
-        fileInput.click();
-    });
+    uploadArea.addEventListener('click', () => fileInput.click());
     
-    // 文件选择
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) {
             handleFileUpload(e.target.files[0]);
         }
     });
     
-    // 拖拽上传
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
         uploadArea.classList.add('dragover');
@@ -33,7 +34,6 @@ function initUpload() {
     uploadArea.addEventListener('drop', (e) => {
         e.preventDefault();
         uploadArea.classList.remove('dragover');
-        
         if (e.dataTransfer.files.length > 0) {
             handleFileUpload(e.dataTransfer.files[0]);
         }
@@ -42,9 +42,7 @@ function initUpload() {
 
 // 处理文件上传
 async function handleFileUpload(file) {
-    const allowedTypes = ['application/json', 'text/csv'];
     const allowedExtensions = ['.json', '.csv'];
-    
     const extension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
     
     if (!allowedExtensions.includes(extension)) {
@@ -54,6 +52,11 @@ async function handleFileUpload(file) {
     
     const formData = new FormData();
     formData.append('file', file);
+    
+    const username = getUsername();
+    if (username) {
+        formData.append('username', username);
+    }
     
     try {
         showToast('正在上传...', 'info');
@@ -68,8 +71,6 @@ async function handleFileUpload(file) {
         if (data.success) {
             showToast('文件上传成功', 'success');
             uploadedFilename = data.filename;
-            
-            // 显示已上传文件
             displayUploadedFile(data.originalName, data.filename, data.size);
         } else {
             showToast(data.message || '上传失败', 'error');
@@ -83,7 +84,6 @@ async function handleFileUpload(file) {
 // 显示已上传文件
 function displayUploadedFile(originalName, filename, size) {
     const container = document.getElementById('uploadedFiles');
-    
     const sizeStr = size > 1024 * 1024 
         ? (size / (1024 * 1024)).toFixed(2) + ' MB'
         : (size / 1024).toFixed(2) + ' KB';
@@ -144,6 +144,11 @@ async function runAnalysis(useDatabase = false) {
             formData.append('filename', uploadedFilename);
         }
         
+        const username = getUsername();
+        if (username) {
+            formData.append('username', username);
+        }
+        
         const response = await fetch('/analysis/run', {
             method: 'POST',
             body: formData
@@ -154,6 +159,8 @@ async function runAnalysis(useDatabase = false) {
         if (data.success) {
             displayAnalysisResult(data);
             analysisContext = JSON.stringify(data.analysis);
+            // 刷新历史记录
+            loadHistory();
         } else {
             analysisResult.innerHTML = `
                 <div class="error-message">
@@ -197,7 +204,6 @@ function displayAnalysisResult(data) {
         </div>
     `;
     
-    // 最高被引论文
     if (analysis.most_cited_paper) {
         html += `
             <div class="result-section">
@@ -213,7 +219,6 @@ function displayAnalysisResult(data) {
         `;
     }
     
-    // 领域分布
     if (analysis.target_distribution && Object.keys(analysis.target_distribution).length > 0) {
         html += `
             <div class="result-section">
@@ -230,7 +235,6 @@ function displayAnalysisResult(data) {
         `;
     }
     
-    // 国家分布
     if (analysis.country_distribution && Object.keys(analysis.country_distribution).length > 0) {
         html += `
             <div class="result-section">
@@ -250,6 +254,73 @@ function displayAnalysisResult(data) {
     container.innerHTML = html;
 }
 
+// 加载分析历史
+async function loadHistory() {
+    const username = getUsername();
+    if (!username) return;
+    
+    const historyContainer = document.getElementById('historyContainer');
+    if (!historyContainer) return;
+    
+    try {
+        const response = await fetch(`/analysis/history?username=${encodeURIComponent(username)}`);
+        const data = await response.json();
+        
+        if (data.success && data.history && data.history.length > 0) {
+            historyContainer.style.display = 'block';
+            const historyList = document.getElementById('historyList');
+            
+            historyList.innerHTML = data.history.map(item => `
+                <div class="history-item" onclick="loadHistoryDetail('${item.filename}')">
+                    <div class="history-name">${item.originalName || '未命名'}</div>
+                    <div class="history-meta">
+                        <span><i class="fas fa-file"></i> ${item.totalPapers || 0} 篇论文</span>
+                        <span><i class="fas fa-clock"></i> ${formatDate(item.createdAt)}</span>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            historyContainer.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('加载历史失败:', error);
+    }
+}
+
+// 加载历史详情
+async function loadHistoryDetail(filename) {
+    try {
+        const response = await fetch(`/analysis/detail?filename=${encodeURIComponent(filename)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            const resultCard = document.getElementById('resultCard');
+            resultCard.style.display = 'block';
+            
+            displayAnalysisResult({ analysis: data.analysis });
+            analysisContext = JSON.stringify(data.analysis);
+            
+            showToast(`已加载: ${data.originalName}`, 'info');
+        } else {
+            showToast(data.message || '加载失败', 'error');
+        }
+    } catch (error) {
+        console.error('加载详情失败:', error);
+        showToast('加载失败', 'error');
+    }
+}
+
+// 格式化日期
+function formatDate(dateStr) {
+    if (!dateStr) return '未知';
+    try {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    } catch {
+        return dateStr;
+    }
+}
+
 // AI对话
 async function sendMessage() {
     const input = document.getElementById('chatInput');
@@ -257,19 +328,19 @@ async function sendMessage() {
     
     if (!message) return;
     
-    // 添加用户消息
     addChatMessage(message, 'user');
     input.value = '';
     
     try {
+        const username = getUsername();
+        
         const response = await fetch('/analysis/chat', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 message: message,
-                context: analysisContext
+                context: analysisContext,
+                username: username
             })
         });
         
@@ -289,20 +360,17 @@ async function sendMessage() {
 // 添加聊天消息
 function addChatMessage(content, type) {
     const container = document.getElementById('chatMessages');
-    
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message ${type}`;
     
-    const icon = type === 'user' ? 'fa-user' : 'fa-robot';
+    const icon = type === 'user' ? '<i class="fas fa-user"></i>' : '<span class="ds-logo">DS</span>';
     
     messageDiv.innerHTML = `
-        <div class="message-avatar"><i class="fas ${icon}"></i></div>
+        <div class="message-avatar">${icon}</div>
         <div class="message-content">${content}</div>
     `;
     
     container.appendChild(messageDiv);
-    
-    // 滚动到底部
     container.scrollTop = container.scrollHeight;
 }
 
@@ -314,38 +382,24 @@ async function checkAIStatus() {
         
         if (data.success && data.data) {
             const aiStatus = data.data;
-            const chatCard = document.querySelector('.chat-card h3');
             
             if (!aiStatus.configured) {
-                // 添加未配置提示
                 const warningDiv = document.createElement('div');
                 warningDiv.className = 'ai-warning';
                 warningDiv.innerHTML = `
                     <i class="fas fa-exclamation-triangle"></i>
                     <span>AI 功能未启用（使用简单问答模式）</span>
-                    <small>配置 ${aiStatus.provider.toUpperCase()}_API_KEY 以启用智能对话</small>
                 `;
-                warningDiv.style.cssText = 'background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px; display: flex; flex-direction: column; gap: 4px;';
+                warningDiv.style.cssText = 'background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 12px;';
                 
                 const cardHeader = document.querySelector('.chat-card > h3');
                 if (cardHeader && cardHeader.nextSibling) {
                     cardHeader.parentNode.insertBefore(warningDiv, cardHeader.nextSibling.nextSibling);
                 }
-                
-                // 更新欢迎消息
-                const welcomeMsg = document.querySelector('.chat-message.bot .message-content');
-                if (welcomeMsg) {
-                    welcomeMsg.innerHTML = `您好！我是期刊分析助手。<br><br>
-                        <span style="color: #856404; font-size: 12px;">
-                            ⚠️ 当前为简单问答模式。配置 AI API Key 可获得更智能的对话体验。
-                        </span>`;
-                }
             } else {
-                // 已配置，显示提供商信息
                 const welcomeMsg = document.querySelector('.chat-message.bot .message-content');
                 if (welcomeMsg) {
-                    welcomeMsg.innerHTML = `您好！我是期刊分析AI助手，由 <strong>${aiStatus.provider}</strong> 提供支持。<br>
-                        您可以问我任何关于论文分析的问题，或者让我帮您解读分析结果。`;
+                    welcomeMsg.innerHTML = `您好！我是期刊分析AI助手。您可以问我任何关于论文分析的问题，我能够阅读您的分析结果并为您解答。`;
                 }
             }
         }
@@ -357,11 +411,10 @@ async function checkAIStatus() {
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     initUpload();
-    
-    // 检查 AI 配置状态
     checkAIStatus();
+    loadHistory();
+    loadLatestContext(); // 加载最新的分析上下文
     
-    // 运行分析按钮
     document.getElementById('runAnalysisBtn').addEventListener('click', () => {
         if (!uploadedFilename) {
             showToast('请先上传数据文件', 'error');
@@ -370,18 +423,40 @@ document.addEventListener('DOMContentLoaded', () => {
         runAnalysis(false);
     });
     
-    // 分析数据库按钮
     document.getElementById('analyzeDbBtn').addEventListener('click', () => {
         runAnalysis(true);
     });
     
-    // 发送消息按钮
     document.getElementById('sendBtn').addEventListener('click', sendMessage);
     
-    // 回车发送
     document.getElementById('chatInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             sendMessage();
         }
     });
 });
+
+// 加载最新的分析上下文（用于AI对话）
+async function loadLatestContext() {
+    const username = getUsername();
+    if (!username) return;
+    
+    try {
+        const response = await fetch(`/analysis/history?username=${encodeURIComponent(username)}`);
+        const data = await response.json();
+        
+        if (data.success && data.history && data.history.length > 0) {
+            // 获取最新记录的详情
+            const latest = data.history[0];
+            const detailResponse = await fetch(`/analysis/detail?filename=${encodeURIComponent(latest.filename)}`);
+            const detailData = await detailResponse.json();
+            
+            if (detailData.success && detailData.analysis) {
+                analysisContext = JSON.stringify(detailData.analysis);
+                console.log('已加载最新分析上下文');
+            }
+        }
+    } catch (error) {
+        console.error('加载分析上下文失败:', error);
+    }
+}

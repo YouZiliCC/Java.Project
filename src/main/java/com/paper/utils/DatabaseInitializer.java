@@ -38,6 +38,9 @@ public class DatabaseInitializer {
                 // 创建关键词表
                 createKeywordTable(stmt);
                 
+                // 创建分析记录表
+                createAnalysisRecordTable(stmt);
+                
                 System.out.println("数据库初始化完成！");
                 
             }
@@ -194,6 +197,52 @@ public class DatabaseInitializer {
         }
         stmt.executeUpdate(sql);
         System.out.println("✓ 关键词表 (KEYWORD) 创建成功");
+    }
+    
+    /**
+     * 创建分析记录表
+     */
+    private static void createAnalysisRecordTable(Statement stmt) throws SQLException {
+        String sql;
+        if (DatabaseConfig.isSQLiteMode()) {
+            sql = """
+                CREATE TABLE IF NOT EXISTS ANALYSIS_RECORD (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username VARCHAR(50) NOT NULL,
+                    filename VARCHAR(100) NOT NULL UNIQUE,
+                    original_name VARCHAR(255),
+                    file_size BIGINT,
+                    analysis_result TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """;
+        } else {
+            sql = """
+                CREATE TABLE IF NOT EXISTS ANALYSIS_RECORD (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    username VARCHAR(50) NOT NULL,
+                    filename VARCHAR(100) NOT NULL UNIQUE,
+                    original_name VARCHAR(255),
+                    file_size BIGINT,
+                    analysis_result TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_analysis_username (username),
+                    INDEX idx_analysis_created (created_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """;
+        }
+        stmt.executeUpdate(sql);
+        
+        // 为 SQLite 创建索引
+        if (DatabaseConfig.isSQLiteMode()) {
+            try {
+                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_analysis_username ON ANALYSIS_RECORD(username)");
+                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_analysis_created ON ANALYSIS_RECORD(created_at)");
+            } catch (SQLException e) {
+                // 索引可能已存在，忽略
+            }
+        }
+        System.out.println("✓ 分析记录表 (ANALYSIS_RECORD) 创建成功");
     }
     
     /**

@@ -19,60 +19,42 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.paper.dao.AnalysisDAO;
+import com.paper.model.AnalysisRecord;
 import com.paper.service.AnalysisService;
 import com.paper.utils.ResponseUtils;
 import com.paper.utils.ValidationUtils;
 
 /**
  * 期刊分析控制器
- * <p>处理数据上传、运行分析、AI对话等功能</p>
- * 
- * <h3>API 列表：</h3>
- * <ul>
- *   <li>POST /analysis/upload - 上传数据文件</li>
- *   <li>POST /analysis/run - 运行数据分析</li>
- *   <li>POST /analysis/chat - AI对话</li>
- *   <li>GET /analysis/files - 获取文件列表</li>
- *   <li>POST /analysis/delete - 删除文件</li>
- * </ul>
- * 
- * @author PaperMaster Team
- * @version 1.0
- * @since 2024-12-18
  */
 @Controller
 @RequestMapping("/analysis")
 public class AnalysisController {
 
-    /** 上传文件目录 */
     private static final String UPLOAD_DIR = "uploads/";
-    
-    /** 允许上传的文件扩展名 */
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".json", ".csv");
-    
-    /** 最大文件大小：10MB */
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
-    
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
     /**
-     * 上传数据文件
-     * 
-     * @param file 上传的文件（支持JSON、CSV格式，最大10MB）
-     * @return 上传结果，包含filename、originalName、size
+     * 上传数据文件（需要用户名）
      */
     @PostMapping("/upload")
     @ResponseBody
-    public Map<String, Object> uploadFile(@RequestParam("file") MultipartFile file) {
-        // 验证文件是否为空
+    public Map<String, Object> uploadFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(required = false) String username) {
+        
         if (file.isEmpty()) {
             return ResponseUtils.error("请选择要上传的文件");
         }
         
-        // 验证文件大小
         if (file.getSize() > MAX_FILE_SIZE) {
             return ResponseUtils.error("文件大小不能超过10MB");
         }
         
-        // 验证文件扩展名
         String originalFilename = file.getOriginalFilename();
         String extension = getFileExtension(originalFilename);
         if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase())) {
@@ -80,18 +62,25 @@ public class AnalysisController {
         }
         
         try {
-            // 创建上传目录
             Path uploadPath = Paths.get(UPLOAD_DIR);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
             
-            // 生成安全的唯一文件名
             String uniqueFilename = UUID.randomUUID().toString() + extension;
             Path filePath = uploadPath.resolve(uniqueFilename);
-            
-            // 保存文件
             Files.copy(file.getInputStream(), filePath);
+            
+            // 保存到数据库
+            if (ValidationUtils.isNotBlank(username)) {
+                try {
+                    AnalysisDAO dao = new AnalysisDAO();
+                    dao.saveUploadRecord(username, uniqueFilename, originalFilename, file.getSize());
+                    dao.close();
+                } catch (Exception e) {
+                    System.err.println("保存上传记录失败: " + e.getMessage());
+                }
+            }
             
             Map<String, Object> data = new HashMap<>();
             data.put("filename", uniqueFilename);
@@ -105,26 +94,39 @@ public class AnalysisController {
     }
 
     /**
-     * 运行数据分析
-     * 
-     * @param filename 可选的文件名，为空则分析数据库数据
-     * @return 分析结果，包含统计信息
+     * 运行数据分析（保存结果到数据库）
      */
     @PostMapping("/run")
     @ResponseBody
-    public Map<String, Object> runAnalysis(@RequestParam(required = false) String filename) {
+    public Map<String, Object> runAnalysis(
+            @RequestParam(required = false) String filename,
+            @RequestParam(required = false) String username) {
         try {
             AnalysisService analysisService = new AnalysisService();
+            Map<String, Object> result;
             
             if (ValidationUtils.isNotBlank(filename)) {
-                // 安全检查：防止路径遍历攻击
                 if (!ValidationUtils.isSafeFilename(filename)) {
                     return ResponseUtils.error("无效的文件名");
                 }
-                return analysisService.analyzeFile(UPLOAD_DIR + filename);
+                result = analysisService.analyzeFile(UPLOAD_DIR + filename);
             } else {
-                return analysisService.analyzeAllData();
+                result = analysisService.analyzeAllData();
             }
+            
+            // 保存分析结果到数据库
+            if (result.get("success").equals(true) && ValidationUtils.isNotBlank(filename)) {
+                try {
+                    AnalysisDAO dao = new AnalysisDAO();
+                    String analysisJson = objectMapper.writeValueAsString(result.get("analysis"));
+                    dao.updateAnalysisResult(filename, analysisJson);
+                    dao.close();
+                } catch (Exception e) {
+                    System.err.println("保存分析结果失败: " + e.getMessage());
+                }
+            }
+            
+            return result;
             
         } catch (Exception e) {
             return ResponseUtils.error("数据分析失败: " + e.getMessage());
@@ -132,27 +134,38 @@ public class AnalysisController {
     }
 
     /**
-     * AI对话接口
-     * 
-     * @param request 包含message和可选context的请求体
-     * @return AI回复
+     * AI对话接口（包含分析上下文）
      */
     @PostMapping("/chat")
     @ResponseBody
     public Map<String, Object> chat(@RequestBody Map<String, String> request) {
         String message = request.get("message");
         String context = request.get("context");
+        String username = request.get("username");
         
         if (ValidationUtils.isBlank(message)) {
             return ResponseUtils.error("请输入消息");
         }
         
-        // 限制消息长度，防止滥用
         if (message.length() > 1000) {
             return ResponseUtils.error("消息内容过长");
         }
         
         try {
+            // 如果没有传入 context，尝试获取用户最近的分析结果
+            if (ValidationUtils.isBlank(context) && ValidationUtils.isNotBlank(username)) {
+                try {
+                    AnalysisDAO dao = new AnalysisDAO();
+                    AnalysisRecord record = dao.getLatestByUsername(username);
+                    if (record != null && record.getAnalysisResult() != null) {
+                        context = record.getAnalysisResult();
+                    }
+                    dao.close();
+                } catch (Exception e) {
+                    System.err.println("获取分析上下文失败: " + e.getMessage());
+                }
+            }
+            
             AnalysisService analysisService = new AnalysisService();
             String reply = analysisService.chat(message.trim(), context);
             
@@ -166,9 +179,88 @@ public class AnalysisController {
     }
 
     /**
+     * 获取用户的分析历史
+     */
+    @GetMapping("/history")
+    @ResponseBody
+    public Map<String, Object> getHistory(@RequestParam String username) {
+        if (ValidationUtils.isBlank(username)) {
+            return ResponseUtils.error("请提供用户名");
+        }
+        
+        try {
+            AnalysisDAO dao = new AnalysisDAO();
+            List<AnalysisRecord> records = dao.getHistoryByUsername(username, 10);
+            dao.close();
+            
+            List<Map<String, Object>> historyList = new ArrayList<>();
+            for (AnalysisRecord record : records) {
+                Map<String, Object> item = new HashMap<>();
+                item.put("id", record.getId());
+                item.put("filename", record.getFilename());
+                item.put("originalName", record.getOriginalName());
+                item.put("fileSize", record.getFileSize());
+                item.put("createdAt", record.getCreatedAt() != null ? record.getCreatedAt().toString() : null);
+                
+                // 解析分析结果摘要
+                if (record.getAnalysisResult() != null) {
+                    try {
+                        Map<String, Object> analysis = objectMapper.readValue(record.getAnalysisResult(), Map.class);
+                        item.put("totalPapers", analysis.get("total_papers"));
+                        item.put("avgCitations", analysis.get("avg_citations"));
+                    } catch (Exception e) {
+                        item.put("totalPapers", 0);
+                    }
+                }
+                historyList.add(item);
+            }
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("history", historyList);
+            return ResponseUtils.success("success", data);
+            
+        } catch (Exception e) {
+            return ResponseUtils.error("获取历史记录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取特定分析记录详情
+     */
+    @GetMapping("/detail")
+    @ResponseBody
+    public Map<String, Object> getDetail(@RequestParam String filename) {
+        if (ValidationUtils.isBlank(filename) || !ValidationUtils.isSafeFilename(filename)) {
+            return ResponseUtils.error("无效的文件名");
+        }
+        
+        try {
+            AnalysisDAO dao = new AnalysisDAO();
+            AnalysisRecord record = dao.getByFilename(filename);
+            dao.close();
+            
+            if (record == null) {
+                return ResponseUtils.error("记录不存在");
+            }
+            
+            Map<String, Object> data = new HashMap<>();
+            data.put("filename", record.getFilename());
+            data.put("originalName", record.getOriginalName());
+            data.put("createdAt", record.getCreatedAt() != null ? record.getCreatedAt().toString() : null);
+            
+            if (record.getAnalysisResult() != null) {
+                data.put("analysis", objectMapper.readValue(record.getAnalysisResult(), Map.class));
+            }
+            
+            return ResponseUtils.success("success", data);
+            
+        } catch (Exception e) {
+            return ResponseUtils.error("获取详情失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 获取 AI 配置状态
-     * 
-     * @return AI 配置信息，包括是否启用、提供商等
      */
     @GetMapping("/ai-status")
     @ResponseBody
@@ -191,8 +283,6 @@ public class AnalysisController {
 
     /**
      * 获取已上传的文件列表
-     * 
-     * @return 文件名列表
      */
     @GetMapping("/files")
     @ResponseBody
@@ -218,19 +308,25 @@ public class AnalysisController {
 
     /**
      * 删除已上传的文件
-     * 
-     * @param filename 要删除的文件名
-     * @return 删除结果
      */
     @PostMapping("/delete")
     @ResponseBody
     public Map<String, Object> deleteFile(@RequestParam String filename) {
-        // 安全检查：防止路径遍历攻击
         if (!ValidationUtils.isSafeFilename(filename)) {
             return ResponseUtils.error("无效的文件名");
         }
         
         try {
+            // 删除数据库记录
+            try {
+                AnalysisDAO dao = new AnalysisDAO();
+                dao.deleteByFilename(filename);
+                dao.close();
+            } catch (Exception e) {
+                System.err.println("删除数据库记录失败: " + e.getMessage());
+            }
+            
+            // 删除文件
             Path filePath = Paths.get(UPLOAD_DIR, filename);
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
@@ -243,12 +339,6 @@ public class AnalysisController {
         }
     }
 
-    /**
-     * 获取文件扩展名
-     * 
-     * @param filename 文件名
-     * @return 扩展名（包含点号）
-     */
     private String getFileExtension(String filename) {
         if (filename == null || !filename.contains(".")) {
             return "";

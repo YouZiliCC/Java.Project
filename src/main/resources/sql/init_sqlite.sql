@@ -95,6 +95,23 @@ CREATE TABLE IF NOT EXISTS PAPER_KEYWORD (
 );
 
 -- ============================================
+-- 分析记录表
+-- ============================================
+CREATE TABLE IF NOT EXISTS ANALYSIS_RECORD (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username VARCHAR(50) NOT NULL,
+    filename VARCHAR(100) NOT NULL UNIQUE,
+    original_name VARCHAR(255),
+    file_size BIGINT,
+    analysis_result TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (username) REFERENCES USER(uname) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_analysis_username ON ANALYSIS_RECORD(username);
+CREATE INDEX IF NOT EXISTS idx_analysis_created ON ANALYSIS_RECORD(created_at);
+
+-- ============================================
 -- 插入测试数据
 -- ============================================
 
