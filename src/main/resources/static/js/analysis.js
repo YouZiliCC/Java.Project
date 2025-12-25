@@ -187,44 +187,41 @@ function displayAnalysisResult(data) {
     const container = document.getElementById('analysisResult');
     const analysis = data.analysis || {};
     
+    // 基础统计卡片
     let html = `
         <div class="result-summary">
             <div class="stat-card">
-                <div class="stat-value">${analysis.total_papers || data.totalPapers || 0}</div>
+                <div class="stat-value">${analysis.total_records || analysis.total_papers || data.totalPapers || 0}</div>
                 <div class="stat-label">论文总数</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">${analysis.avg_citations || 0}</div>
-                <div class="stat-label">平均引用</div>
+                <div class="stat-value">${analysis.journal_count || 0}</div>
+                <div class="stat-label">期刊数量</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value">${analysis.avg_refs || 0}</div>
-                <div class="stat-label">平均参考文献</div>
+                <div class="stat-value">${analysis.total_files || 0}</div>
+                <div class="stat-label">处理文件数</div>
             </div>
         </div>
     `;
     
-    if (analysis.most_cited_paper) {
+    // 年份范围
+    if (analysis.year_range) {
         html += `
             <div class="result-section">
-                <h4><i class="fas fa-trophy"></i> 最高被引论文</h4>
-                <div class="highlight-card">
-                    <div class="paper-title">${analysis.most_cited_paper.title}</div>
-                    <div class="paper-meta">
-                        <span><i class="fas fa-user"></i> ${analysis.most_cited_paper.author}</span>
-                        <span><i class="fas fa-quote-right"></i> 被引: ${analysis.most_cited_paper.citations}</span>
-                    </div>
-                </div>
+                <h4><i class="fas fa-calendar"></i> 时间跨度</h4>
+                <p>论文发表年份：${analysis.year_range.min} - ${analysis.year_range.max}</p>
             </div>
         `;
     }
     
-    if (analysis.target_distribution && Object.keys(analysis.target_distribution).length > 0) {
+    // Top期刊分布
+    if (analysis.top_journals && Object.keys(analysis.top_journals).length > 0) {
         html += `
             <div class="result-section">
-                <h4><i class="fas fa-tags"></i> 领域分布</h4>
+                <h4><i class="fas fa-book"></i> 期刊分布 TOP 10</h4>
                 <div class="distribution-list">
-                    ${Object.entries(analysis.target_distribution).map(([key, value]) => `
+                    ${Object.entries(analysis.top_journals).slice(0, 10).map(([key, value]) => `
                         <div class="distribution-item">
                             <span class="dist-label">${key}</span>
                             <span class="dist-value">${value}</span>
@@ -235,23 +232,200 @@ function displayAnalysisResult(data) {
         `;
     }
     
-    if (analysis.country_distribution && Object.keys(analysis.country_distribution).length > 0) {
+    // 五大指标展示
+    html += '<div class="metrics-section"><h3><i class="fas fa-chart-line"></i> 期刊评价指标</h3>';
+    
+    // 1. 颠覆性指数 (Disruption)
+    if (analysis.disruption && analysis.disruption.length > 0) {
         html += `
-            <div class="result-section">
-                <h4><i class="fas fa-globe"></i> 国家/地区分布</h4>
-                <div class="distribution-list">
-                    ${Object.entries(analysis.country_distribution).slice(0, 10).map(([key, value]) => `
-                        <div class="distribution-item">
-                            <span class="dist-label">${key}</span>
-                            <span class="dist-value">${value}</span>
-                        </div>
-                    `).join('')}
+            <div class="result-section metric-card">
+                <h4><i class="fas fa-bolt"></i> 颠覆性指数 (Disruption)</h4>
+                <p class="metric-desc">衡量期刊发表论文的创新突破程度</p>
+                <div class="metric-table">
+                    <table>
+                        <thead><tr><th>期刊</th><th>百分位分数</th></tr></thead>
+                        <tbody>
+                            ${analysis.disruption.map(item => `
+                                <tr>
+                                    <td>${item.journal || item.Journal || '-'}</td>
+                                    <td>${formatScore(item.percent_score || item.score)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
     }
+    
+    // 2. 跨学科性 (Interdisciplinary)
+    if (analysis.interdisciplinary && analysis.interdisciplinary.length > 0) {
+        html += `
+            <div class="result-section metric-card">
+                <h4><i class="fas fa-project-diagram"></i> 跨学科性 (Interdisciplinary)</h4>
+                <p class="metric-desc">衡量期刊研究的跨领域融合程度</p>
+                <div class="metric-table">
+                    <table>
+                        <thead><tr><th>期刊</th><th>百分位分数</th></tr></thead>
+                        <tbody>
+                            ${analysis.interdisciplinary.map(item => `
+                                <tr>
+                                    <td>${item.journal || item.Journal || '-'}</td>
+                                    <td>${formatScore(item.percent_score || item.score)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 3. 新颖性 (Novelty)
+    if (analysis.novelty && analysis.novelty.length > 0) {
+        html += `
+            <div class="result-section metric-card">
+                <h4><i class="fas fa-lightbulb"></i> 新颖性 (Novelty)</h4>
+                <p class="metric-desc">衡量期刊发表内容的创新程度</p>
+                <div class="metric-table">
+                    <table>
+                        <thead><tr><th>期刊</th><th>百分位分数</th></tr></thead>
+                        <tbody>
+                            ${analysis.novelty.map(item => `
+                                <tr>
+                                    <td>${item.journal || item.Journal || '-'}</td>
+                                    <td>${formatScore(item.percent_score || item.score)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 4. 主题复杂度 (Topic Entropy)
+    if (analysis.topic && analysis.topic.length > 0) {
+        html += `
+            <div class="result-section metric-card">
+                <h4><i class="fas fa-puzzle-piece"></i> 主题复杂度 (Topic)</h4>
+                <p class="metric-desc">衡量期刊研究主题的多样性</p>
+                <div class="metric-table">
+                    <table>
+                        <thead><tr><th>期刊</th><th>百分位分数</th></tr></thead>
+                        <tbody>
+                            ${analysis.topic.map(item => `
+                                <tr>
+                                    <td>${item.journal || item.Journal || '-'}</td>
+                                    <td>${formatScore(item.percent_score || item.score)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    // 5. 主题热度 (Theme)
+    if (analysis.theme && analysis.theme.length > 0) {
+        html += `
+            <div class="result-section metric-card">
+                <h4><i class="fas fa-fire"></i> 主题热度 (Theme)</h4>
+                <p class="metric-desc">衡量期刊对热门主题的响应度</p>
+                <div class="metric-table">
+                    <table>
+                        <thead><tr><th>期刊</th><th>主题集中度</th><th>热点响应度</th></tr></thead>
+                        <tbody>
+                            ${analysis.theme.map(item => `
+                                <tr>
+                                    <td>${item.journal || item.Journal || '-'}</td>
+                                    <td>${formatScore(item.theme_concentration)}</td>
+                                    <td>${formatScore(item.hot_response)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    }
+    
+    html += '</div>';  // end metrics-section
+    
+    // AI 总结区域
+    html += `
+        <div class="ai-summary-section" id="aiSummarySection">
+            <h4><i class="fas fa-robot"></i> AI 智能总结</h4>
+            <div id="aiSummaryContent">
+                <button class="btn-primary" onclick="generateAISummary()">
+                    <i class="fas fa-magic"></i> 生成AI总结
+                </button>
+            </div>
+        </div>
+    `;
     
     container.innerHTML = html;
+}
+
+// 格式化分数显示
+function formatScore(score) {
+    if (score === null || score === undefined || isNaN(score)) return '-';
+    return (typeof score === 'number') ? score.toFixed(2) : score;
+}
+
+// 生成AI总结
+async function generateAISummary() {
+    const summaryContent = document.getElementById('aiSummaryContent');
+    summaryContent.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> AI正在分析中...</div>';
+    
+    try {
+        const username = getUsername();
+        const response = await fetch('/analysis/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: '请根据以上分析结果，给出一个专业的学术期刊评价总结报告，包括：1. 数据概况 2. 各指标特点分析 3. 综合评价建议',
+                context: analysisContext,
+                username: username
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            summaryContent.innerHTML = `
+                <div class="ai-summary-text">${formatAIResponse(data.reply)}</div>
+                <button class="btn-secondary" onclick="generateAISummary()">
+                    <i class="fas fa-redo"></i> 重新生成
+                </button>
+            `;
+        } else {
+            summaryContent.innerHTML = `
+                <div class="error-message">${data.message || 'AI总结生成失败'}</div>
+                <button class="btn-primary" onclick="generateAISummary()">
+                    <i class="fas fa-redo"></i> 重试
+                </button>
+            `;
+        }
+    } catch (error) {
+        console.error('AI总结失败:', error);
+        summaryContent.innerHTML = `
+            <div class="error-message">请求失败，请稍后重试</div>
+            <button class="btn-primary" onclick="generateAISummary()">
+                <i class="fas fa-redo"></i> 重试
+            </button>
+        `;
+    }
+}
+
+// 格式化AI响应（支持markdown简单格式）
+function formatAIResponse(text) {
+    if (!text) return '';
+    return text
+        .replace(/\n/g, '<br>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>');
 }
 
 // 加载分析历史
@@ -416,15 +590,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadLatestContext(); // 加载最新的分析上下文
     
     document.getElementById('runAnalysisBtn').addEventListener('click', () => {
-        if (!uploadedFilename) {
-            showToast('请先上传数据文件', 'error');
-            return;
-        }
+        // 直接启动分析，后端会自动处理用户目录下的数据
         runAnalysis(false);
-    });
-    
-    document.getElementById('analyzeDbBtn').addEventListener('click', () => {
-        runAnalysis(true);
     });
     
     document.getElementById('sendBtn').addEventListener('click', sendMessage);

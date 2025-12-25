@@ -1,4 +1,4 @@
-﻿package com.paper.service;
+package com.paper.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

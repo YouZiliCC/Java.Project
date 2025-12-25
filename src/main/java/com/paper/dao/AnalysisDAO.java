@@ -29,6 +29,14 @@ public class AnalysisDAO {
     }
     
     /**
+     * 保存分析记录（包含分析结果）
+     */
+    public String saveAnalysisRecord(String username, String filename, String originalName, String analysisResult) {
+        String sql = "INSERT INTO analysis_record (username, filename, original_name, analysis_result) VALUES (?, ?, ?, ?)";
+        return mysqlHelper.executeSQL(sql, username, filename, originalName, analysisResult);
+    }
+    
+    /**
      * 更新分析结果
      */
     public String updateAnalysisResult(String filename, String analysisResult) {

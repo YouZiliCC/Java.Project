@@ -33,8 +33,8 @@ import com.paper.model.Paper;
  */
 public class AnalysisService {
 
-    /** Python分析脚本路径 */
-    private static final String ANALYSIS_SCRIPT_PATH = "src/main/resources/python/data_analysis.py";
+    /** Python分析主脚本路径 */
+    private static final String PYTHON_MAIN_SCRIPT = "src/main/resources/python/main.py";
     
     /** JSON对象映射器 */
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -124,7 +124,7 @@ public class AnalysisService {
 
     /**
      * 分析用户目录下的所有CSV/JSON文件
-     * <p>读取用户上传目录下的所有数据文件并进行统计分析</p>
+     * <p>调用Python脚本进行完整的指标分析</p>
      * 
      * @param userDirPath 用户目录路径
      * @return 分析结果
@@ -152,62 +152,102 @@ public class AnalysisService {
             return response;
         }
         
-        // 合并所有文件中的论文数据
-        List<Paper> allPapers = new ArrayList<>();
-        List<String> processedFiles = new ArrayList<>();
+        // 调用 Python main.py --user-dir 模式进行分析
+        return runPythonAnalysis(userDirPath);
+    }
+    
+    /**
+     * 调用Python脚本分析用户数据
+     * 
+     * @param userDirPath 用户目录路径
+     * @return 分析结果
+     */
+    private Map<String, Object> runPythonAnalysis(String userDirPath) throws Exception {
+        Map<String, Object> response = new HashMap<>();
         
-        for (File file : dataFiles) {
-            try {
-                StringBuilder content = new StringBuilder();
-                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        content.append(line).append("\n");
-                    }
-                }
-                
-                List<Paper> papers;
-                String filename = file.getName().toLowerCase();
-                
-                if (filename.endsWith(".json")) {
-                    papers = objectMapper.readValue(content.toString(),
-                            objectMapper.getTypeFactory().constructCollectionType(List.class, Paper.class));
-                } else {
-                    papers = parseCsvContent(content.toString());
-                }
-                
-                allPapers.addAll(papers);
-                processedFiles.add(file.getName());
-                
-            } catch (Exception e) {
-                System.err.println("处理文件失败: " + file.getName() + " - " + e.getMessage());
+        ProcessBuilder processBuilder = new ProcessBuilder(
+                "python", PYTHON_MAIN_SCRIPT, 
+                "--user-dir", userDirPath,
+                "--json"  // 输出JSON格式
+        );
+        processBuilder.directory(new File("."));
+        processBuilder.redirectErrorStream(false);  // 分离错误输出
+        
+        Process process = processBuilder.start();
+        
+        // 读取标准输出
+        StringBuilder output = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getInputStream(), "UTF-8"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                output.append(line);
             }
         }
         
-        if (allPapers.isEmpty()) {
+        // 读取错误输出（用于调试）
+        StringBuilder errorOutput = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                errorOutput.append(line).append("\n");
+                System.err.println("[Python] " + line);
+            }
+        }
+        
+        int exitCode = process.waitFor();
+        
+        if (exitCode != 0) {
             response.put("success", false);
-            response.put("message", "无法从文件中读取到有效的论文数据");
+            response.put("message", "Python分析脚本执行失败");
+            response.put("error", errorOutput.toString());
             return response;
         }
         
-        // 调用分析
-        Map<String, Object> result = analyzePapersData(allPapers);
-        result.put("processedFiles", processedFiles);
-        result.put("totalFiles", processedFiles.size());
-        
-        return result;
+        // 解析JSON输出
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> analysisResult = objectMapper.readValue(output.toString(), Map.class);
+            
+            // 检查Python返回的结果
+            if (analysisResult.containsKey("success") && Boolean.FALSE.equals(analysisResult.get("success"))) {
+                response.put("success", false);
+                response.put("message", analysisResult.get("message"));
+                return response;
+            }
+            
+            response.put("success", true);
+            response.put("message", "分析完成");
+            response.put("analysis", analysisResult);
+            response.put("totalPapers", analysisResult.get("total_records"));
+            
+            return response;
+            
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "解析分析结果失败: " + e.getMessage());
+            response.put("rawOutput", output.toString());
+            return response;
+        }
     }
 
     /**
-     * 调用Python脚本分析论文数据
+     * 调用Python脚本分析论文数据（JSON格式）
+     * 这个方法用于分析单个文件或数据库的论文数据
      */
     private Map<String, Object> analyzePapersData(List<Paper> papers) throws Exception {
         Map<String, Object> response = new HashMap<>();
         
-        String papersJson = objectMapper.writeValueAsString(papers);
+        // 将论文数据写入临时文件
+        File tempFile = File.createTempFile("papers_", ".json");
+        tempFile.deleteOnExit();
+        objectMapper.writeValue(tempFile, papers);
         
         ProcessBuilder processBuilder = new ProcessBuilder(
-                "python", ANALYSIS_SCRIPT_PATH, papersJson
+                "python", PYTHON_MAIN_SCRIPT, 
+                "--user-dir", tempFile.getParent(),
+                "--json"
         );
         processBuilder.directory(new File("."));
         processBuilder.redirectErrorStream(true);
@@ -225,6 +265,9 @@ public class AnalysisService {
         
         int exitCode = process.waitFor();
         
+        // 清理临时文件
+        tempFile.delete();
+        
         if (exitCode != 0) {
             response.put("success", false);
             response.put("message", "Python分析脚本执行失败");
@@ -232,6 +275,7 @@ public class AnalysisService {
             return response;
         }
         
+        @SuppressWarnings("unchecked")
         Map<String, Object> analysisResult = objectMapper.readValue(output.toString(), Map.class);
         
         response.put("success", true);

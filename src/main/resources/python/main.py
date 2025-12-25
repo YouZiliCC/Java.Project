@@ -23,19 +23,35 @@ from pathlib import Path
 
 import pandas as pd
 
+# 全局变量：是否为 JSON 模式（日志输出到 stderr）
+_json_mode = False
 
-def analyze_user_data(user_dir: Path) -> dict:
+def log(msg: str):
+    """日志输出函数：JSON模式输出到stderr，否则输出到stdout"""
+    if _json_mode:
+        print(msg, file=sys.stderr)
+    else:
+        print(msg)
+
+
+def analyze_user_data(user_dir: Path, output_dir: Path = None) -> dict:
     """
     分析用户目录下的所有CSV文件
     
     Args:
         user_dir: 用户数据目录路径
+        output_dir: 输出目录路径（默认为 user_dir/outputs）
     
     Returns:
         分析结果字典
     """
     if not user_dir.exists():
         return {"success": False, "message": f"目录不存在: {user_dir}"}
+    
+    # 设置输出目录
+    if output_dir is None:
+        output_dir = user_dir / "outputs"
+    output_dir.mkdir(parents=True, exist_ok=True)
     
     # 收集所有CSV文件
     csv_files = list(user_dir.glob("*.csv"))
@@ -53,35 +69,37 @@ def analyze_user_data(user_dir: Path) -> dict:
                     df = pd.read_csv(csv_file, encoding=enc)
                     dfs.append(df)
                     processed_files.append(csv_file.name)
-                    print(f"[读取成功] {csv_file.name} ({len(df)} 条记录, 编码: {enc})")
+                    log(f"[读取成功] {csv_file.name} ({len(df)} 条记录, 编码: {enc})")
                     break
                 except UnicodeDecodeError:
                     continue
         except Exception as e:
-            print(f"[读取失败] {csv_file.name}: {e}")
+            log(f"[读取失败] {csv_file.name}: {e}")
     
     if not dfs:
         return {"success": False, "message": "无法读取任何CSV文件"}
     
     # 合并数据
     combined_df = pd.concat(dfs, ignore_index=True)
-    print(f"\n[合并完成] 共 {len(combined_df)} 条记录，来自 {len(processed_files)} 个文件")
+    log(f"\n[合并完成] 共 {len(combined_df)} 条记录，来自 {len(processed_files)} 个文件")
     
-    # 执行分析
-    result = perform_analysis(combined_df)
+    # 执行分析（传入输出目录）
+    result = perform_analysis(combined_df, output_dir)
     result["processed_files"] = processed_files
     result["total_files"] = len(processed_files)
+    result["output_dir"] = str(output_dir)
     result["success"] = True
     
     return result
 
 
-def perform_analysis(df: pd.DataFrame) -> dict:
+def perform_analysis(df: pd.DataFrame, output_dir: Path = None) -> dict:
     """
     执行数据分析
     
     Args:
         df: 合并后的DataFrame
+        output_dir: 输出目录（用于保存各指标的结果文件）
     
     Returns:
         分析结果
@@ -99,7 +117,7 @@ def perform_analysis(df: pd.DataFrame) -> dict:
     
     if "keywords" in df.columns:
         # 统计关键词
-        result["has_keywords"] = df["keywords"].notna().sum()
+        result["has_keywords"] = int(df["keywords"].notna().sum())
     
     if "publish_date" in df.columns or "year" in df.columns:
         year_col = "year" if "year" in df.columns else "publish_date"
@@ -116,7 +134,7 @@ def perform_analysis(df: pd.DataFrame) -> dict:
     if "citations" in df.columns:
         try:
             # 尝试提取引用数量
-            result["has_citations"] = df["citations"].notna().sum()
+            result["has_citations"] = int(df["citations"].notna().sum())
         except Exception:
             pass
     
@@ -128,54 +146,79 @@ def perform_analysis(df: pd.DataFrame) -> dict:
         from topic_analyzer_036 import analyze_topic_entropy
         from theme_034 import ThemeHotnessAnalyzer
         
-        print("\n[指标计算]")
+        log("\n[指标计算]")
+        
+        # 创建输出子目录
+        if output_dir:
+            disrupt_out = output_dir / "disrupt"
+            inter_out = output_dir / "interdisciplinary"
+            novelty_out = output_dir / "novelty"
+            topic_out = output_dir / "topic"
+            theme_out = output_dir / "theme"
+            for d in [disrupt_out, inter_out, novelty_out, topic_out, theme_out]:
+                d.mkdir(parents=True, exist_ok=True)
         
         try:
-            print("  计算颠覆性指数...")
+            log("  计算颠覆性指数...")
             disrupt_df = analyze_disruption(df)
             result["disruption"] = disrupt_df.head(10).to_dict(orient="records")
+            if output_dir:
+                disrupt_df.to_csv(disrupt_out / "disruption.csv", index=False)
+                result["disruption_file"] = str(disrupt_out / "disruption.csv")
         except Exception as e:
-            print(f"  颠覆性指数计算失败: {e}")
+            log(f"  颠覆性指数计算失败: {e}")
         
         try:
-            print("  计算跨学科性...")
+            log("  计算跨学科性...")
             inter_df = analyze_interdisciplinary(df)
             result["interdisciplinary"] = inter_df.head(10).to_dict(orient="records")
+            if output_dir:
+                inter_df.to_csv(inter_out / "interdisciplinary.csv", index=False)
+                result["interdisciplinary_file"] = str(inter_out / "interdisciplinary.csv")
         except Exception as e:
-            print(f"  跨学科性计算失败: {e}")
+            log(f"  跨学科性计算失败: {e}")
         
         try:
-            print("  计算新颖性...")
+            log("  计算新颖性...")
             novelty_df = analyze_journal_novelty(df)
             result["novelty"] = novelty_df.head(10).to_dict(orient="records")
+            if output_dir:
+                novelty_df.to_csv(novelty_out / "novelty.csv", index=False)
+                result["novelty_file"] = str(novelty_out / "novelty.csv")
         except Exception as e:
-            print(f"  新颖性计算失败: {e}")
+            log(f"  新颖性计算失败: {e}")
         
         try:
-            print("  计算主题复杂度...")
+            log("  计算主题复杂度...")
             topic_df = analyze_topic_entropy(df)
             result["topic"] = topic_df.head(10).to_dict(orient="records")
+            if output_dir:
+                topic_df.to_csv(topic_out / "topic.csv", index=False)
+                result["topic_file"] = str(topic_out / "topic.csv")
         except Exception as e:
-            print(f"  主题复杂度计算失败: {e}")
+            log(f"  主题复杂度计算失败: {e}")
         
         try:
-            print("  计算主题热度...")
+            log("  计算主题热度...")
             theme_analyzer = ThemeHotnessAnalyzer(df)
             theme_df = theme_analyzer.run(top_n=10)
             result["theme"] = theme_df.to_dict(orient="records")
+            if output_dir:
+                theme_df.to_csv(theme_out / "theme.csv", index=False)
+                result["theme_file"] = str(theme_out / "theme.csv")
         except Exception as e:
-            print(f"  主题热度计算失败: {e}")
+            log(f"  主题热度计算失败: {e}")
         
     except ImportError as e:
-        print(f"[提示] 指标计算模块未找到: {e}")
+        log(f"[提示] 指标计算模块未找到: {e}")
     
     return result
 
 
 def _run_step(args: list[str], *, cwd: Path, name: str) -> None:
     """运行子脚本"""
-    print(f"\n========== RUN {name} ==========")
-    print(" ".join(args))
+    log(f"\n========== RUN {name} ==========")
+    log(" ".join(args))
     proc = subprocess.run(args, cwd=str(cwd))
     if proc.returncode != 0:
         raise SystemExit(f"步骤 {name} 失败，退出码: {proc.returncode}")
@@ -197,7 +240,7 @@ def run_pipeline(base_dir: Path, clean_config: str, metrics_db_config: str, year
         cmd3 += ["--year", str(year)]
     _run_step(cmd3, cwd=base_dir, name="03 main_03")
 
-    print("\n========== ALL DONE ==========")
+    log("\n========== ALL DONE ==========")
 
 
 def main() -> None:
@@ -231,22 +274,26 @@ def main() -> None:
     
     args = parser.parse_args()
 
+    # 设置 JSON 模式全局变量（日志输出到 stderr）
+    global _json_mode
+    _json_mode = args.json
+
     # 模式选择
     if args.user:
         # 用户模式：分析 uploads/{username}/ 目录
         user_dir = project_root / "uploads" / args.user
-        print(f"[用户模式] 分析目录: {user_dir}")
+        log(f"[用户模式] 分析目录: {user_dir}")
         result = analyze_user_data(user_dir)
         
     elif args.user_dir:
         # 直接指定目录
         user_dir = Path(args.user_dir)
-        print(f"[目录模式] 分析目录: {user_dir}")
+        log(f"[目录模式] 分析目录: {user_dir}")
         result = analyze_user_data(user_dir)
         
     elif args.pipeline:
         # 流水线模式
-        print("[流水线模式] 执行 01/02/03")
+        log("[流水线模式] 执行 01/02/03")
         run_pipeline(base_dir, args.clean_config, args.metrics_db_config, args.year)
         return
         
@@ -261,21 +308,22 @@ def main() -> None:
     
     # 输出结果
     if args.json:
-        print(json.dumps(result, ensure_ascii=False, indent=2))
+        # JSON 模式：单行输出，不带缩进，方便 Java 解析
+        print(json.dumps(result, ensure_ascii=False))
     elif args.output:
         output_path = Path(args.output)
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
-        print(f"\n[输出] 结果已保存到: {output_path}")
+        log(f"\n[输出] 结果已保存到: {output_path}")
     else:
-        print("\n========== 分析结果 ==========")
-        print(f"成功: {result.get('success', False)}")
-        print(f"总记录数: {result.get('total_records', 0)}")
-        print(f"处理文件数: {result.get('total_files', 0)}")
+        log("\n========== 分析结果 ==========")
+        log(f"成功: {result.get('success', False)}")
+        log(f"总记录数: {result.get('total_records', 0)}")
+        log(f"处理文件数: {result.get('total_files', 0)}")
         if "journal_count" in result:
-            print(f"期刊数量: {result['journal_count']}")
+            log(f"期刊数量: {result['journal_count']}")
         if "year_range" in result:
-            print(f"年份范围: {result['year_range']['min']} - {result['year_range']['max']}")
+            log(f"年份范围: {result['year_range']['min']} - {result['year_range']['max']}")
 
 
 if __name__ == "__main__":

@@ -36,7 +36,7 @@ public class AnalysisController {
     // 用户上传文件存储目录：uploads/{username}/
     private static final String UPLOAD_BASE_DIR = "uploads/";
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".json", ".csv");
-    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 1000 * 1024 * 1024; // 100MB
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -63,7 +63,7 @@ public class AnalysisController {
         }
         
         if (file.getSize() > MAX_FILE_SIZE) {
-            return ResponseUtils.error("文件大小不能超过10MB");
+            return ResponseUtils.error("文件大小不能超过1000MB");
         }
         
         String originalFilename = file.getOriginalFilename();
@@ -117,6 +117,7 @@ public class AnalysisController {
         try {
             AnalysisService analysisService = new AnalysisService();
             Map<String, Object> result;
+            String analysisFilename = filename;
             
             if (ValidationUtils.isNotBlank(filename)) {
                 if (!ValidationUtils.isSafeFilename(filename)) {
@@ -129,19 +130,33 @@ public class AnalysisController {
                 // 分析用户目录下的所有文件
                 Path userDir = getUserUploadDir(username);
                 result = analysisService.analyzeUserDirectory(userDir.toString());
+                // 为用户目录分析生成一个唯一文件名标识
+                analysisFilename = "user_analysis_" + System.currentTimeMillis() + ".json";
             } else {
                 result = analysisService.analyzeAllData();
+                analysisFilename = "db_analysis_" + System.currentTimeMillis() + ".json";
             }
             
             // 保存分析结果到数据库
-            if (result.get("success").equals(true) && ValidationUtils.isNotBlank(filename)) {
+            if (Boolean.TRUE.equals(result.get("success")) && ValidationUtils.isNotBlank(username)) {
                 try {
                     AnalysisDAO dao = new AnalysisDAO();
-                    String analysisJson = objectMapper.writeValueAsString(result.get("analysis"));
-                    dao.updateAnalysisResult(filename, analysisJson);
+                    Object analysisObj = result.get("analysis");
+                    String analysisJson = analysisObj != null ? objectMapper.writeValueAsString(analysisObj) : "{}";
+                    
+                    // 如果是新分析，先创建记录
+                    if (analysisFilename != null && analysisFilename.startsWith("user_analysis_")) {
+                        dao.saveAnalysisRecord(username, analysisFilename, "用户数据分析", analysisJson);
+                    } else if (analysisFilename != null) {
+                        dao.updateAnalysisResult(analysisFilename, analysisJson);
+                    }
                     dao.close();
+                    
+                    // 在返回结果中添加分析记录ID
+                    result.put("analysisId", analysisFilename);
                 } catch (Exception e) {
                     System.err.println("保存分析结果失败: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
             

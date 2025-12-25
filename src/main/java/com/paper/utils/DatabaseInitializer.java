@@ -70,7 +70,7 @@ public class DatabaseInitializer {
         String sql;
         if (DatabaseConfig.isSQLiteMode()) {
             sql = """
-                CREATE TABLE IF NOT EXISTS USER (
+                CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     uname VARCHAR(50) NOT NULL UNIQUE,
                     password VARCHAR(255) NOT NULL,
@@ -80,7 +80,7 @@ public class DatabaseInitializer {
             """;
         } else {
             sql = """
-                CREATE TABLE IF NOT EXISTS USER (
+                CREATE TABLE IF NOT EXISTS users (
                     id INT PRIMARY KEY AUTO_INCREMENT,
                     uname VARCHAR(50) NOT NULL UNIQUE,
                     password VARCHAR(255) NOT NULL,
@@ -90,7 +90,7 @@ public class DatabaseInitializer {
             """;
         }
         stmt.executeUpdate(sql);
-        System.out.println("✓ 用户表 (USER) 创建成功");
+        System.out.println("✓ 用户表 (users) 创建成功");
     }
     
     /**
@@ -100,7 +100,7 @@ public class DatabaseInitializer {
         String sql;
         if (DatabaseConfig.isSQLiteMode()) {
             sql = """
-                CREATE TABLE IF NOT EXISTS PAPER (
+                CREATE TABLE IF NOT EXISTS papers (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     wos_id VARCHAR(50) UNIQUE,
                     title TEXT NOT NULL,
@@ -122,7 +122,7 @@ public class DatabaseInitializer {
             """;
         } else {
             sql = """
-                CREATE TABLE IF NOT EXISTS PAPER (
+                CREATE TABLE IF NOT EXISTS papers (
                     id INT PRIMARY KEY AUTO_INCREMENT,
                     wos_id VARCHAR(50) UNIQUE,
                     title TEXT NOT NULL,
@@ -144,7 +144,7 @@ public class DatabaseInitializer {
             """;
         }
         stmt.executeUpdate(sql);
-        System.out.println("✓ 论文表 (PAPER) 创建成功");
+        System.out.println("✓ 论文表 (papers) 创建成功");
     }
     
     /**
@@ -154,7 +154,7 @@ public class DatabaseInitializer {
         String sql;
         if (DatabaseConfig.isSQLiteMode()) {
             sql = """
-                CREATE TABLE IF NOT EXISTS AUTHOR (
+                CREATE TABLE IF NOT EXISTS authors (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name VARCHAR(100) NOT NULL,
                     affiliation VARCHAR(255),
@@ -163,7 +163,7 @@ public class DatabaseInitializer {
             """;
         } else {
             sql = """
-                CREATE TABLE IF NOT EXISTS AUTHOR (
+                CREATE TABLE IF NOT EXISTS authors (
                     id INT PRIMARY KEY AUTO_INCREMENT,
                     name VARCHAR(100) NOT NULL,
                     affiliation VARCHAR(255),
@@ -172,7 +172,7 @@ public class DatabaseInitializer {
             """;
         }
         stmt.executeUpdate(sql);
-        System.out.println("✓ 作者表 (AUTHOR) 创建成功");
+        System.out.println("✓ 作者表 (authors) 创建成功");
     }
     
     /**
@@ -182,21 +182,21 @@ public class DatabaseInitializer {
         String sql;
         if (DatabaseConfig.isSQLiteMode()) {
             sql = """
-                CREATE TABLE IF NOT EXISTS KEYWORD (
+                CREATE TABLE IF NOT EXISTS keywords (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     keyword VARCHAR(100) NOT NULL UNIQUE
                 )
             """;
         } else {
             sql = """
-                CREATE TABLE IF NOT EXISTS KEYWORD (
+                CREATE TABLE IF NOT EXISTS keywords (
                     id INT PRIMARY KEY AUTO_INCREMENT,
                     keyword VARCHAR(100) NOT NULL UNIQUE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """;
         }
         stmt.executeUpdate(sql);
-        System.out.println("✓ 关键词表 (KEYWORD) 创建成功");
+        System.out.println("✓ 关键词表 (keywords) 创建成功");
     }
     
     /**
@@ -206,7 +206,7 @@ public class DatabaseInitializer {
         String sql;
         if (DatabaseConfig.isSQLiteMode()) {
             sql = """
-                CREATE TABLE IF NOT EXISTS ANALYSIS_RECORD (
+                CREATE TABLE IF NOT EXISTS analysis_record (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     username VARCHAR(50) NOT NULL,
                     filename VARCHAR(100) NOT NULL UNIQUE,
@@ -218,7 +218,7 @@ public class DatabaseInitializer {
             """;
         } else {
             sql = """
-                CREATE TABLE IF NOT EXISTS ANALYSIS_RECORD (
+                CREATE TABLE IF NOT EXISTS analysis_record (
                     id INT PRIMARY KEY AUTO_INCREMENT,
                     username VARCHAR(50) NOT NULL,
                     filename VARCHAR(100) NOT NULL UNIQUE,
@@ -236,59 +236,12 @@ public class DatabaseInitializer {
         // 为 SQLite 创建索引
         if (DatabaseConfig.isSQLiteMode()) {
             try {
-                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_analysis_username ON ANALYSIS_RECORD(username)");
-                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_analysis_created ON ANALYSIS_RECORD(created_at)");
+                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_analysis_username ON analysis_record(username)");
+                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_analysis_created ON analysis_record(created_at)");
             } catch (SQLException e) {
                 // 索引可能已存在，忽略
             }
         }
-        System.out.println("✓ 分析记录表 (ANALYSIS_RECORD) 创建成功");
+        System.out.println("✓ 分析记录表 (analysis_record) 创建成功");
     }
-    
-    /**
-     * 插入测试数据
-     */
-    // public static void insertTestData() {
-    //     System.out.println("插入测试数据...");
-        
-    //     try {
-    //         Class.forName(DatabaseConfig.getDriverClassName());
-            
-    //         try (Connection conn = getConnection();
-    //              Statement stmt = conn.createStatement()) {
-                
-    //             // 插入测试论文数据
-    //             String insertPapers = """
-    //                 INSERT OR IGNORE INTO PAPER (wos_id, title, abstract_text, publish_date, journal, author, citations, keywords, target)
-    //                 VALUES 
-    //                 ('WOS:001', 'Deep Learning for Natural Language Processing', 
-    //                  'This paper presents a comprehensive survey of deep learning techniques for NLP tasks including sentiment analysis, machine translation, and question answering.',
-    //                  '2024-01-15', 'IEEE Transactions on Neural Networks', 'Zhang Wei; Li Ming; Wang Fang', 156, 'deep learning;NLP;neural networks;transformer', 'deep learning'),
-    //                 ('WOS:002', 'Machine Learning in Healthcare: A Review',
-    //                  'We review the application of machine learning algorithms in healthcare, covering disease diagnosis, drug discovery, and personalized medicine.',
-    //                  '2024-02-20', 'Nature Medicine', 'Chen Xiao; Liu Yang', 89, 'machine learning;healthcare;diagnosis;AI', 'machine learning'),
-    //                 ('WOS:003', 'Quantum Computing: Current State and Future Directions',
-    //                  'An overview of quantum computing technologies, including quantum algorithms, error correction, and potential applications in cryptography.',
-    //                  '2024-03-10', 'Science', 'Wang Lei; Zhao Min; Sun Tao', 234, 'quantum computing;algorithms;cryptography', 'quantum'),
-    //                 ('WOS:004', 'Sustainable Energy Systems: A Comprehensive Analysis',
-    //                  'This study analyzes various sustainable energy systems including solar, wind, and hydrogen fuel cells for future energy infrastructure.',
-    //                  '2024-04-05', 'Energy & Environmental Science', 'Li Hua; Zhang Yong', 67, 'renewable energy;solar;wind;sustainability', 'energy'),
-    //                 ('WOS:005', 'Advances in Computer Vision with Convolutional Neural Networks',
-    //                  'We present recent advances in computer vision using CNNs, including object detection, image segmentation, and visual recognition tasks.',
-    //                  '2024-05-12', 'Computer Vision and Image Understanding', 'Wu Jian; Huang Wei; Xu Li', 198, 'computer vision;CNN;object detection;image processing', 'computer vision')
-    //             """;
-                
-    //             // SQLite 使用 INSERT OR IGNORE，MySQL 使用 INSERT IGNORE
-    //             if (!DatabaseConfig.isSQLiteMode()) {
-    //                 insertPapers = insertPapers.replace("INSERT OR IGNORE", "INSERT IGNORE");
-    //             }
-                
-    //             stmt.executeUpdate(insertPapers);
-    //             System.out.println("✓ 测试论文数据插入成功");
-                
-    //         }
-    //     } catch (Exception e) {
-    //         System.err.println("插入测试数据失败: " + e.getMessage());
-    //     }
-    // }
 }

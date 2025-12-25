@@ -63,7 +63,8 @@ disrupt_config = {
         # 诊断输出：按 journal 展示的 Top-N（按论文量排序）
         "diagnostics_top_n_journals": 15,
         # 是否输出“参与期刊聚合的论文数”（排除 NaN/0 后）到 outputs/disrupt
-        "export_participating_paper_counts": True,
+        # 注意：默认关闭，避免在脚本目录生成 outputs 文件夹；main.py 会单独控制输出目录
+        "export_participating_paper_counts": False,
 
         # 动态过滤：剔除“高频且疑似期刊名”的 title token，避免形成超级节点抬高指标
         # 注意：这里刻意不包含“报告”后缀（报告也可能是论文题名）。

@@ -846,3 +846,104 @@ body {
 .history-meta i {
     margin-right: 0.25rem;
 }
+
+/* 五大指标展示样式 */
+.metrics-section {
+    margin-top: 2rem;
+}
+
+.metrics-section h3 {
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.metric-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.metric-desc {
+    color: var(--text-light);
+    font-size: 0.9rem;
+    margin-bottom: 0.75rem;
+}
+
+.metric-table {
+    overflow-x: auto;
+}
+
+.metric-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.metric-table th,
+.metric-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.metric-table th {
+    background: rgba(0,0,0,0.05);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.metric-table tr:hover {
+    background: rgba(0,0,0,0.02);
+}
+
+.metric-table td:last-child {
+    font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* AI 总结区域 */
+.ai-summary-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #e8f4f8 0%, #d4e8ed 100%);
+    border-radius: var(--radius);
+    border: 1px solid #b8d4de;
+}
+
+.ai-summary-section h4 {
+    margin-bottom: 1rem;
+    color: #2c5f6e;
+}
+
+.ai-summary-text {
+    background: white;
+    padding: 1rem;
+    border-radius: var(--radius);
+    line-height: 1.8;
+    margin-bottom: 1rem;
+}
+
+.ai-summary-section .btn-secondary {
+    background: transparent;
+    border: 1px solid #2c5f6e;
+    color: #2c5f6e;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+}
+
+.ai-summary-section .btn-secondary:hover {
+    background: #2c5f6e;
+    color: white;
+}
+
+.ai-summary-section .loading {
+    text-align: center;
+    padding: 1rem;
+    color: var(--text-light);
+}
+
+.ai-summary-section .loading i {
+    margin-right: 0.5rem;
+}
