@@ -46,7 +46,7 @@ def analyze_user_data(user_dir: Path, output_dir: Path = None) -> dict:
         分析结果字典
     """
     if not user_dir.exists():
-        return {"success": False, "message": f"目录不存在: {user_dir}"}
+        return {"success": False, "message": f"Directory not found: {user_dir}"}
     
     # 设置输出目录
     if output_dir is None:
@@ -56,7 +56,7 @@ def analyze_user_data(user_dir: Path, output_dir: Path = None) -> dict:
     # 收集所有CSV文件
     csv_files = list(user_dir.glob("*.csv"))
     if not csv_files:
-        return {"success": False, "message": "目录下没有CSV文件"}
+        return {"success": False, "message": "No CSV files in directory"}
     
     # 合并所有CSV数据
     dfs = []
@@ -69,19 +69,19 @@ def analyze_user_data(user_dir: Path, output_dir: Path = None) -> dict:
                     df = pd.read_csv(csv_file, encoding=enc)
                     dfs.append(df)
                     processed_files.append(csv_file.name)
-                    log(f"[读取成功] {csv_file.name} ({len(df)} 条记录, 编码: {enc})")
+                    log(f"[OK] {csv_file.name} ({len(df)} records, encoding: {enc})")
                     break
                 except UnicodeDecodeError:
                     continue
         except Exception as e:
-            log(f"[读取失败] {csv_file.name}: {e}")
+            log(f"[FAIL] {csv_file.name}: {e}")
     
     if not dfs:
-        return {"success": False, "message": "无法读取任何CSV文件"}
+        return {"success": False, "message": "Failed to read any CSV files"}
     
     # 合并数据
     combined_df = pd.concat(dfs, ignore_index=True)
-    log(f"\n[合并完成] 共 {len(combined_df)} 条记录，来自 {len(processed_files)} 个文件")
+    log(f"\n[Merged] {len(combined_df)} records from {len(processed_files)} files")
     
     # 执行分析（传入输出目录）
     result = perform_analysis(combined_df, output_dir)
@@ -89,6 +89,16 @@ def analyze_user_data(user_dir: Path, output_dir: Path = None) -> dict:
     result["total_files"] = len(processed_files)
     result["output_dir"] = str(output_dir)
     result["success"] = True
+    
+    # 将结果写入文件，供 Java 读取
+    result_file = output_dir / "analysis_result.json"
+    try:
+        with open(result_file, "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+        result["result_file"] = str(result_file)
+        log(f"\n[Saved] {result_file}")
+    except Exception as e:
+        log(f"[WARN] Failed to save result: {e}")
     
     return result
 
@@ -146,7 +156,7 @@ def perform_analysis(df: pd.DataFrame, output_dir: Path = None) -> dict:
         from topic_analyzer_036 import analyze_topic_entropy
         from theme_034 import ThemeHotnessAnalyzer
         
-        log("\n[指标计算]")
+        log("\n[Metrics Calculation]")
         
         # 创建输出子目录
         if output_dir:
@@ -159,47 +169,47 @@ def perform_analysis(df: pd.DataFrame, output_dir: Path = None) -> dict:
                 d.mkdir(parents=True, exist_ok=True)
         
         try:
-            log("  计算颠覆性指数...")
+            log("  Calculating disruption index...")
             disrupt_df = analyze_disruption(df)
             result["disruption"] = disrupt_df.head(10).to_dict(orient="records")
             if output_dir:
                 disrupt_df.to_csv(disrupt_out / "disruption.csv", index=False)
                 result["disruption_file"] = str(disrupt_out / "disruption.csv")
         except Exception as e:
-            log(f"  颠覆性指数计算失败: {e}")
+            log(f"  Disruption index failed: {e}")
         
         try:
-            log("  计算跨学科性...")
+            log("  Calculating interdisciplinarity...")
             inter_df = analyze_interdisciplinary(df)
             result["interdisciplinary"] = inter_df.head(10).to_dict(orient="records")
             if output_dir:
                 inter_df.to_csv(inter_out / "interdisciplinary.csv", index=False)
                 result["interdisciplinary_file"] = str(inter_out / "interdisciplinary.csv")
         except Exception as e:
-            log(f"  跨学科性计算失败: {e}")
+            log(f"  Interdisciplinarity failed: {e}")
         
         try:
-            log("  计算新颖性...")
+            log("  Calculating novelty...")
             novelty_df = analyze_journal_novelty(df)
             result["novelty"] = novelty_df.head(10).to_dict(orient="records")
             if output_dir:
                 novelty_df.to_csv(novelty_out / "novelty.csv", index=False)
                 result["novelty_file"] = str(novelty_out / "novelty.csv")
         except Exception as e:
-            log(f"  新颖性计算失败: {e}")
+            log(f"  Novelty failed: {e}")
         
         try:
-            log("  计算主题复杂度...")
+            log("  Calculating topic complexity...")
             topic_df = analyze_topic_entropy(df)
             result["topic"] = topic_df.head(10).to_dict(orient="records")
             if output_dir:
                 topic_df.to_csv(topic_out / "topic.csv", index=False)
                 result["topic_file"] = str(topic_out / "topic.csv")
         except Exception as e:
-            log(f"  主题复杂度计算失败: {e}")
+            log(f"  Topic complexity failed: {e}")
         
         try:
-            log("  计算主题热度...")
+            log("  Calculating theme hotness...")
             theme_analyzer = ThemeHotnessAnalyzer(df)
             theme_df = theme_analyzer.run(top_n=10)
             result["theme"] = theme_df.to_dict(orient="records")
@@ -207,10 +217,10 @@ def perform_analysis(df: pd.DataFrame, output_dir: Path = None) -> dict:
                 theme_df.to_csv(theme_out / "theme.csv", index=False)
                 result["theme_file"] = str(theme_out / "theme.csv")
         except Exception as e:
-            log(f"  主题热度计算失败: {e}")
+            log(f"  Theme hotness failed: {e}")
         
     except ImportError as e:
-        log(f"[提示] 指标计算模块未找到: {e}")
+        log(f"[INFO] Metrics modules not found: {e}")
     
     return result
 
@@ -282,18 +292,18 @@ def main() -> None:
     if args.user:
         # 用户模式：分析 uploads/{username}/ 目录
         user_dir = project_root / "uploads" / args.user
-        log(f"[用户模式] 分析目录: {user_dir}")
+        log(f"[User Mode] Dir: {user_dir}")
         result = analyze_user_data(user_dir)
         
     elif args.user_dir:
         # 直接指定目录
         user_dir = Path(args.user_dir)
-        log(f"[目录模式] 分析目录: {user_dir}")
+        log(f"[Dir Mode] Dir: {user_dir}")
         result = analyze_user_data(user_dir)
         
     elif args.pipeline:
         # 流水线模式
-        log("[流水线模式] 执行 01/02/03")
+        log("[Pipeline Mode] Running 01/02/03")
         run_pipeline(base_dir, args.clean_config, args.metrics_db_config, args.year)
         return
         
@@ -314,16 +324,16 @@ def main() -> None:
         output_path = Path(args.output)
         with open(output_path, "w", encoding="utf-8") as f:
             json.dump(result, f, ensure_ascii=False, indent=2)
-        log(f"\n[输出] 结果已保存到: {output_path}")
+        log(f"\n[Output] Saved to: {output_path}")
     else:
-        log("\n========== 分析结果 ==========")
-        log(f"成功: {result.get('success', False)}")
-        log(f"总记录数: {result.get('total_records', 0)}")
-        log(f"处理文件数: {result.get('total_files', 0)}")
+        log("\n========== Analysis Result ==========")
+        log(f"Success: {result.get('success', False)}")
+        log(f"Total records: {result.get('total_records', 0)}")
+        log(f"Files processed: {result.get('total_files', 0)}")
         if "journal_count" in result:
-            log(f"期刊数量: {result['journal_count']}")
+            log(f"Journal count: {result['journal_count']}")
         if "year_range" in result:
-            log(f"年份范围: {result['year_range']['min']} - {result['year_range']['max']}")
+            log(f"Year range: {result['year_range']['min']} - {result['year_range']['max']}")
 
 
 if __name__ == "__main__":

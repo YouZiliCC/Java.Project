@@ -40,7 +40,8 @@ def _uniform_rank_to_1_100(values: pd.Series, *, tie_breaker: pd.Series | None =
     return out
 
 def log(msg: str):
-    print(f"[disrupt] {msg}")
+    import sys
+    print(f"[disrupt] {msg}", file=sys.stderr)
 
 disrupt_config = {
     "columns": {
@@ -233,7 +234,7 @@ class DisruptionIndexCalculator:
         return f"title:{title_norm}"
 
     def build_citation_network(self, df: pd.DataFrame):
-        log("构建引文网络...")
+        log("Building citation network...")
         id_col = self.get_column_name("id")
         citing_col = self.get_column_name("citing")
         title_col = self.get_column_name("title")
@@ -310,11 +311,11 @@ class DisruptionIndexCalculator:
                     suffixes = ["学报", "期刊", "杂志", "工作", "通讯", "导报", "学刊"]
                 removed = self._filter_high_freq_journalish_title_tokens(min_citers=min_citers, suffixes=list(suffixes))
                 if removed:
-                    log(f"动态过滤已剔除高频疑似期刊名 title token: {len(removed)}")
+                    log(f"Dynamic filter removed high-freq journal-like title tokens: {len(removed)}")
         except Exception as e:
-            log(f"动态过滤失败（不影响主流程）：{e}")
+            log(f"Dynamic filter failed (not critical): {e}")
 
-        log(f"网络构建完成 | 论文数: {len(self.paper_references)}")
+        log(f"Network built | Papers: {len(self.paper_references)}")
         return self
 
     def _filter_high_freq_journalish_title_tokens(self, *, min_citers: int, suffixes: list[str]) -> set[str]:
@@ -417,7 +418,7 @@ def calculate_paper_scores(df_all: pd.DataFrame, config: dict):
     journal_col = calculator.get_column_name("journal")
 
     records = []
-    log("计算论文颠覆性指数...")
+    log("Calculating paper disruption index...")
     for idx, row in df_all.reset_index(drop=True).iterrows():
         pid = calculator._derive_pid(row, idx, id_col) # type: ignore
         try:
@@ -432,7 +433,7 @@ def calculate_paper_scores(df_all: pd.DataFrame, config: dict):
             }
         )
 
-    log("论文级计算完成")
+    log("Paper-level calculation done")
     return pd.DataFrame(records), calculator
 
 
@@ -501,7 +502,7 @@ def _print_diagnostics(
         cat_sum["d_nan_rate"] = (cat_sum["d_nan"] / cat_sum["papers"]).round(4)
         cat_sum["d_zero_rate"] = (cat_sum["d_zero"] / cat_sum["papers"]).round(4)
         log("按 category 汇总（papers/ref_empty_rate/ref_avg/ref_median/indeg0_rate/d_nan_rate/d_zero_rate）：")
-        print(cat_sum.sort_values("papers", ascending=False).to_string(index=False))
+        log(cat_sum.sort_values("papers", ascending=False).to_string(index=False))
 
         # 按 journal（Top-N）汇总：优先用 paper_scores 里的 journal
         j_sum = (
@@ -523,7 +524,7 @@ def _print_diagnostics(
         top_n = max(0, int(top_n_journals))
         if top_n > 0:
             log(f"Top-{top_n} 期刊（按论文量）诊断：")
-            print(j_sum.head(top_n).to_string(index=False))
+            log(j_sum.head(top_n).to_string(index=False))
 
         # token 碰撞诊断：node token（doi/title/pid）是否在样本内大量重复
         try:
@@ -552,7 +553,7 @@ def _print_diagnostics(
                         for tok, cnt in title_dup.head(show_n).items():
                             # tok 可能很长，只显示前 80 字符
                             tshow = tok[:80] + ("..." if len(tok) > 80 else "") # type: ignore
-                            print(f"  {cnt}\t{tshow}")
+                            log(f"  {cnt}\t{tshow}")
                 else:
                     log("token 碰撞诊断：未发现 node token 重复")
         except Exception as e:
@@ -586,7 +587,7 @@ def _print_diagnostics(
                             if journalish.search(title_text):
                                 flag = " [疑似期刊/出版信息]"
                         tshow = tok[:90] + ("..." if len(tok) > 90 else "")
-                        print(f"  {cnt}\t{tshow}{flag}")
+                        log(f"  {cnt}\t{tshow}{flag}")
         except Exception as e:
             log(f"高频引用token诊断失败（不影响主流程）：{e}")
     except Exception as e:
@@ -720,8 +721,8 @@ if __name__ == "__main__":
             raise FileNotFoundError(f"未找到数据文件，已尝试: {[str(p) for p in csv_candidates]}")
         df = pd.read_csv(csv_path, encoding="utf-8-sig")
         result = analyze_disruption(df)
-        print(result)
+        log(str(result))
     except Exception as e:
-        print(f"[错误] 程序执行失败: {e}")
+        log(f"[错误] 程序执行失败: {e}")
         import traceback
         traceback.print_exc()

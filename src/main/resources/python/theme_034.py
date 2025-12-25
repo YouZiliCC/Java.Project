@@ -16,8 +16,8 @@ class ThemeHotnessAnalyzer:
     def __init__(self, df, journal_col="journal", keyword_col="keywords"):
         self.journal_col = journal_col
         self.keyword_col = keyword_col
-        self.original_df = df.copy()  # 保存原始全集
-        self.df = df.copy()
+        self.original_df = df.copy()
+        self.df = self.original_df.copy()
         self._prepare_data()
     
     def _prepare_data(self):
@@ -30,7 +30,7 @@ class ThemeHotnessAnalyzer:
                 year_col_found = cand
                 break
         if year_col_found is None or self.df["year"].isna().all():
-            raise ValueError("未能识别到有效的年份列")
+            raise ValueError("No valid year column found")
         self.df = self.df[(self.df["year"] >= 2021) & (self.df["year"] <= 2025)].copy()
         self.df[self.keyword_col] = self.df[self.keyword_col].apply(self._split_keywords)
         self.df = self.df.dropna(subset=[self.journal_col])

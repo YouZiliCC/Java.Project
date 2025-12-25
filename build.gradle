@@ -23,6 +23,24 @@ tasks.withType(Javadoc).configureEach {
 	options.encoding = 'UTF-8'
 }
 
+// 设置运行时编码为 UTF-8，解决控制台中文乱码
+tasks.withType(JavaExec).configureEach {
+	jvmArgs '-Dfile.encoding=UTF-8', '-Dsun.stdout.encoding=UTF-8', '-Dsun.stderr.encoding=UTF-8'
+}
+
+bootRun {
+	jvmArgs = [
+		'-Dfile.encoding=UTF-8',
+		'-Dsun.stdout.encoding=UTF-8',
+		'-Dsun.stderr.encoding=UTF-8',
+		'-Dnative.encoding=UTF-8'
+	]
+	// Windows 控制台编码设置
+	systemProperty 'file.encoding', 'UTF-8'
+	systemProperty 'sun.stdout.encoding', 'UTF-8'
+	systemProperty 'sun.stderr.encoding', 'UTF-8'
+}
+
 repositories {
 	maven { url 'https://maven.aliyun.com/repository/public' }
     maven { url 'https://maven.aliyun.com/repository/central' }

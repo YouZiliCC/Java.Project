@@ -61,7 +61,7 @@ public class AnalysisDAO {
                 return mapResultSetToRecord(rs);
             }
         } catch (SQLException e) {
-            System.err.println("查询分析记录失败: " + e.getMessage());
+            System.err.println("Failed to query analysis record: " + e.getMessage());
         }
         return null;
     }
@@ -84,7 +84,7 @@ public class AnalysisDAO {
                 records.add(mapResultSetToRecord(rs));
             }
         } catch (SQLException e) {
-            System.err.println("查询分析历史失败: " + e.getMessage());
+            System.err.println("Failed to query analysis history: " + e.getMessage());
         }
         return records;
     }
@@ -106,7 +106,7 @@ public class AnalysisDAO {
                 return mapResultSetToRecord(rs);
             }
         } catch (SQLException e) {
-            System.err.println("查询最近分析记录失败: " + e.getMessage());
+            System.err.println("Failed to query latest analysis record: " + e.getMessage());
         }
         return null;
     }

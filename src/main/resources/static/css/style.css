@@ -94,6 +94,29 @@ body {
     color: white;
 }
 
+.btn-success {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #219a52;
+}
+
+.btn-success:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
 /* Main Container */
 .container {
     max-width: 1200px;
@@ -573,6 +596,33 @@ body {
     opacity: 0.9;
 }
 
+/* Result Header with Actions */
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.result-header h3 {
+    margin: 0;
+}
+
+.result-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.result-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
+}
+
 .result-section {
     margin-bottom: 1.5rem;
 }
@@ -813,6 +863,8 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    max-height: 300px;
+    overflow-y: auto;
 }
 
 .history-item {
@@ -820,11 +872,14 @@ body {
     background: var(--background-color);
     border-radius: var(--radius);
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
 }
 
 .history-item:hover {
     background: #e9ecef;
+    border-left-color: var(--primary-color);
+    transform: translateX(2px);
 }
 
 .history-name {
@@ -834,17 +889,25 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-size: 0.95rem;
 }
 
 .history-meta {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-light);
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.history-meta span {
+    display: inline-flex;
+    align-items: center;
 }
 
 .history-meta i {
     margin-right: 0.25rem;
+    font-size: 0.7rem;
 }
 
 /* 五大指标展示样式 */

@@ -16,7 +16,7 @@
             <h1 class="page-title"><i class="fas fa-chart-pie"></i> 期刊分析</h1>
             
             <div class="analysis-layout">
-                <!-- 左侧：上传和分析 -->
+                <!-- 左侧：上传和分析结果 -->
                 <div class="analysis-left">
                     <div class="card upload-card">
                         <h3><i class="fas fa-upload"></i> 数据上传</h3>
@@ -38,19 +38,20 @@
                     </div>
 
                     <div class="card result-card" id="resultCard" style="display: none;">
-                        <h3><i class="fas fa-chart-bar"></i> 分析结果</h3>
+                        <div class="result-header">
+                            <h3><i class="fas fa-chart-bar"></i> 分析结果</h3>
+                            <div class="result-actions">
+                                <button id="downloadBtn" class="btn btn-success" onclick="downloadResults()" title="打包下载所有分析结果">
+                                    <i class="fas fa-download"></i> 下载结果
+                                </button>
+                            </div>
+                        </div>
                         <div id="analysisLoader" class="loader" style="display: none;"></div>
                         <div id="analysisResult"></div>
                     </div>
-
-                    <!-- 分析历史 -->
-                    <div class="card history-card" id="historyContainer" style="display: none;">
-                        <h3><i class="fas fa-history"></i> 分析历史</h3>
-                        <div id="historyList" class="history-list"></div>
-                    </div>
                 </div>
 
-                <!-- 右侧：AI对话 -->
+                <!-- 右侧：AI对话 + 历史记录 -->
                 <div class="analysis-right">
                     <div class="card chat-card">
                         <h3><svg class="deepseek-icon" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg> AI 助手</h3>
@@ -71,6 +72,12 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- 分析历史 - 放在AI助手下方 -->
+                    <div class="card history-card" id="historyContainer" style="display: none;">
+                        <h3><i class="fas fa-history"></i> 分析历史</h3>
+                        <div id="historyList" class="history-list"></div>
                     </div>
                 </div>
             </div>

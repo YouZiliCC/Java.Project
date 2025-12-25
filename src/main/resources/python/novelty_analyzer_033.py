@@ -93,54 +93,80 @@ def analyze_journal_novelty(
 ) -> pd.DataFrame:
     """
     期刊新颖性计算（连续值）
+    使用分批处理避免内存问题
     """
     if target_df is None:
         target_df = background_df
 
-    all_journals = target_df[journal_col].dropna().astype(str).unique()
+    # 检查必需列
+    if journal_col not in target_df.columns:
+        raise ValueError(f"Missing column: {journal_col}")
 
-    # 构建关键词组合首次出现年份
+    all_journals = target_df[journal_col].dropna().astype(str).unique()
+    
+    # 检查 keywords 列
+    if keywords_col not in background_df.columns:
+        return pd.DataFrame({
+            "journal": all_journals,
+            "novelty_score": 0.0,
+            "paper_count": 0,
+            "percent_score_raw": 0.0,
+            "percent_score": 0.0
+        })
+
+    # 构建关键词组合首次出现年份（分批处理）
     pair_first_year = {}
-    for _, row in background_df.iterrows():
-        kws_raw = row.get(keywords_col)
-        kws = clean_keywords(kws_raw)
-        year = parse_year(row.get(year_col))
-        if len(kws) < 2 or year is None:
-            continue
-        for pair in combinations(kws, 2):
-            pair = tuple(sorted(pair))
-            if pair not in pair_first_year:
-                pair_first_year[pair] = year
-            else:
-                pair_first_year[pair] = min(year, pair_first_year[pair])
+    BATCH_SIZE = 5000
+    
+    for batch_start in range(0, len(background_df), BATCH_SIZE):
+        batch = background_df.iloc[batch_start:batch_start + BATCH_SIZE]
+        for _, row in batch.iterrows():
+            kws_raw = row.get(keywords_col)
+            kws = clean_keywords(kws_raw)
+            # 限制每篇论文的关键词数量，避免组合爆炸
+            if len(kws) > 15:
+                kws = kws[:15]
+            year = parse_year(row.get(year_col))
+            if len(kws) < 2 or year is None:
+                continue
+            for pair in combinations(kws, 2):
+                pair = tuple(sorted(pair))
+                if pair not in pair_first_year:
+                    pair_first_year[pair] = year
+                else:
+                    pair_first_year[pair] = min(year, pair_first_year[pair])
 
     # 当前年份
     valid_years = [parse_year(y) for y in background_df[year_col] if parse_year(y) is not None]
     current_year = max(valid_years) if valid_years else 2025
 
-    # 论文级新颖性
+    # 论文级新颖性（分批处理）
     paper_scores = []
-    for _, row in target_df.iterrows():
-        kws = clean_keywords(row.get(keywords_col))
-        journal = row.get(journal_col, "Unknown")
-        if len(kws) < 2:
-            paper_scores.append((journal, 0.0))
-            continue
+    for batch_start in range(0, len(target_df), BATCH_SIZE):
+        batch = target_df.iloc[batch_start:batch_start + BATCH_SIZE]
+        for _, row in batch.iterrows():
+            kws = clean_keywords(row.get(keywords_col))
+            if len(kws) > 15:
+                kws = kws[:15]
+            journal = row.get(journal_col, "Unknown")
+            if len(kws) < 2:
+                paper_scores.append((journal, 0.0))
+                continue
 
-        novelty_sum = 0
-        count = 0
-        for pair in combinations(kws, 2):
-            pair = tuple(sorted(pair))
-            first_year = pair_first_year.get(pair)
-            if first_year is None:
-                novelty = 1.0  # 从未出现过
-            else:
-                delta = current_year - first_year
-                novelty = 1.0 / (1.0 + delta)  # 时间越接近，novelty越高
-            novelty_sum += novelty
-            count += 1
-        score = novelty_sum / count if count > 0 else 0.0
-        paper_scores.append((journal, score))
+            novelty_sum = 0
+            count = 0
+            for pair in combinations(kws, 2):
+                pair = tuple(sorted(pair))
+                first_year = pair_first_year.get(pair)
+                if first_year is None:
+                    novelty = 1.0
+                else:
+                    delta = current_year - first_year
+                    novelty = 1.0 / (1.0 + delta)
+                novelty_sum += novelty
+                count += 1
+            score = novelty_sum / count if count > 0 else 0.0
+            paper_scores.append((journal, score))
 
     paper_df = pd.DataFrame(paper_scores, columns=["journal", "novelty_score"])
 

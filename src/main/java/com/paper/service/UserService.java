@@ -169,7 +169,7 @@ public class UserService {
             Transport.send(message);
             return "发送成功";
         } catch (MessagingException e) {
-            System.err.println("验证码发送失败: " + e.getMessage());
+            System.err.println("Failed to send verification code: " + e.getMessage());
             return "验证码发送失败：" + e.getMessage();
         }
     }
@@ -318,7 +318,7 @@ public class UserService {
             try {
                 rs.close();
             } catch (SQLException e) {
-                System.err.println("关闭ResultSet失败: " + e.getMessage());
+                System.err.println("Failed to close ResultSet: " + e.getMessage());
             }
         }
     }

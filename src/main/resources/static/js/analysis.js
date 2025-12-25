@@ -444,21 +444,34 @@ async function loadHistory() {
             historyContainer.style.display = 'block';
             const historyList = document.getElementById('historyList');
             
-            historyList.innerHTML = data.history.map(item => `
+            historyList.innerHTML = data.history.map(item => {
+                const paperCount = item.totalPapers || 0;
+                const journalCount = item.journalCount || 0;
+                const displayName = item.originalName || '用户数据分析';
+                
+                return `
                 <div class="history-item" onclick="loadHistoryDetail('${item.filename}')">
-                    <div class="history-name">${item.originalName || '未命名'}</div>
+                    <div class="history-name" title="${displayName}">${truncateText(displayName, 25)}</div>
                     <div class="history-meta">
-                        <span><i class="fas fa-file"></i> ${item.totalPapers || 0} 篇论文</span>
+                        <span><i class="fas fa-file-alt"></i> ${paperCount} 篇</span>
+                        ${journalCount > 0 ? `<span><i class="fas fa-book"></i> ${journalCount} 刊</span>` : ''}
                         <span><i class="fas fa-clock"></i> ${formatDate(item.createdAt)}</span>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         } else {
             historyContainer.style.display = 'none';
         }
     } catch (error) {
         console.error('加载历史失败:', error);
     }
+}
+
+// 截断文本
+function truncateText(text, maxLength) {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 }
 
 // 加载历史详情
@@ -602,6 +615,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
+// 下载分析结果
+async function downloadResults() {
+    const username = getUsername();
+    const downloadBtn = document.getElementById('downloadBtn');
+    
+    try {
+        // 显示加载状态
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 打包中...';
+        
+        const url = `/analysis/download${username ? '?username=' + encodeURIComponent(username) : ''}`;
+        const response = await fetch(url);
+        
+        if (!response.ok) {
+            if (response.status === 404) {
+                showToast('暂无分析结果可下载', 'warning');
+            } else {
+                showToast('下载失败，请稍后重试', 'error');
+            }
+            return;
+        }
+        
+        // 获取文件名
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'analysis_results.zip';
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename=(.+)/);
+            if (match) {
+                filename = match[1].replace(/"/g, '');
+            }
+        }
+        
+        // 下载文件
+        const blob = await response.blob();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(downloadUrl);
+        
+        showToast('下载成功！', 'success');
+        
+    } catch (error) {
+        console.error('下载失败:', error);
+        showToast('下载失败: ' + error.message, 'error');
+    } finally {
+        // 恢复按钮状态
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '<i class="fas fa-download"></i> 下载结果';
+    }
+}
 
 // 加载最新的分析上下文（用于AI对话）
 async function loadLatestContext() {

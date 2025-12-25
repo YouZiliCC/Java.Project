@@ -1,5 +1,6 @@
 package com.paper.controller;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -9,7 +10,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -79,6 +85,9 @@ public class AnalysisController {
                 Files.createDirectories(uploadPath);
             }
             
+            // 清理用户目录下的旧数据文件（只保留一份）
+            cleanUserDataFiles(uploadPath);
+            
             String uniqueFilename = UUID.randomUUID().toString() + extension;
             Path filePath = uploadPath.resolve(uniqueFilename);
             Files.copy(file.getInputStream(), filePath);
@@ -90,7 +99,7 @@ public class AnalysisController {
                     dao.saveUploadRecord(username, uniqueFilename, originalFilename, file.getSize());
                     dao.close();
                 } catch (Exception e) {
-                    System.err.println("保存上传记录失败: " + e.getMessage());
+                    System.err.println("Failed to save upload record: " + e.getMessage());
                 }
             }
             
@@ -155,7 +164,7 @@ public class AnalysisController {
                     // 在返回结果中添加分析记录ID
                     result.put("analysisId", analysisFilename);
                 } catch (Exception e) {
-                    System.err.println("保存分析结果失败: " + e.getMessage());
+                    System.err.println("Failed to save analysis result: " + e.getMessage());
                     e.printStackTrace();
                 }
             }
@@ -196,7 +205,7 @@ public class AnalysisController {
                     }
                     dao.close();
                 } catch (Exception e) {
-                    System.err.println("获取分析上下文失败: " + e.getMessage());
+                    System.err.println("Failed to get analysis context: " + e.getMessage());
                 }
             }
             
@@ -240,8 +249,13 @@ public class AnalysisController {
                 if (record.getAnalysisResult() != null) {
                     try {
                         Map<String, Object> analysis = objectMapper.readValue(record.getAnalysisResult(), Map.class);
-                        item.put("totalPapers", analysis.get("total_papers"));
-                        item.put("avgCitations", analysis.get("avg_citations"));
+                        // 兼容多种字段名
+                        Object totalPapers = analysis.get("total_records");
+                        if (totalPapers == null) {
+                            totalPapers = analysis.get("total_papers");
+                        }
+                        item.put("totalPapers", totalPapers != null ? totalPapers : 0);
+                        item.put("journalCount", analysis.get("journal_count"));
                     } catch (Exception e) {
                         item.put("totalPapers", 0);
                     }
@@ -360,7 +374,7 @@ public class AnalysisController {
                 dao.deleteByFilename(filename);
                 dao.close();
             } catch (Exception e) {
-                System.err.println("删除数据库记录失败: " + e.getMessage());
+                System.err.println("Failed to delete DB record: " + e.getMessage());
             }
             
             // 删除文件（从用户目录）
@@ -381,5 +395,118 @@ public class AnalysisController {
             return "";
         }
         return filename.substring(filename.lastIndexOf("."));
+    }
+
+    /**
+     * 一键打包下载分析结果
+     */
+    @GetMapping("/download")
+    public ResponseEntity<byte[]> downloadResults(@RequestParam(required = false) String username) {
+        try {
+            Path userDir = getUserUploadDir(username);
+            Path outputsDir = userDir.resolve("outputs");
+            
+            if (!Files.exists(outputsDir)) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+                // 添加主分析结果
+                Path resultFile = outputsDir.resolve("analysis_result.json");
+                if (Files.exists(resultFile)) {
+                    addToZip(zos, resultFile, "analysis_result.json");
+                }
+                
+                // 添加各指标详细结果
+                String[] metricDirs = {"disrupt", "interdisciplinary", "novelty", "theme", "topic", "keywords"};
+                for (String dir : metricDirs) {
+                    Path metricPath = outputsDir.resolve(dir);
+                    if (Files.exists(metricPath) && Files.isDirectory(metricPath)) {
+                        Files.walk(metricPath)
+                            .filter(Files::isRegularFile)
+                            .forEach(file -> {
+                                try {
+                                    String entryName = dir + "/" + file.getFileName().toString();
+                                    addToZip(zos, file, entryName);
+                                } catch (IOException e) {
+                                    System.err.println("Failed to add file to zip: " + file);
+                                }
+                            });
+                    }
+                }
+                
+                // 添加清洗后的数据文件
+                Path dataDir = userDir.resolve("data");
+                if (Files.exists(dataDir) && Files.isDirectory(dataDir)) {
+                    Files.list(dataDir)
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.toString().endsWith(".csv"))
+                        .forEach(file -> {
+                            try {
+                                String entryName = "data/" + file.getFileName().toString();
+                                addToZip(zos, file, entryName);
+                            } catch (IOException e) {
+                                System.err.println("Failed to add data file to zip: " + file);
+                            }
+                        });
+                }
+            }
+            
+            byte[] zipBytes = baos.toByteArray();
+            
+            String zipFilename = "analysis_results_" + System.currentTimeMillis() + ".zip";
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("attachment", zipFilename);
+            headers.setContentLength(zipBytes.length);
+            
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .body(zipBytes);
+                    
+        } catch (IOException e) {
+            System.err.println("Download failed: " + e.getMessage());
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
+    /**
+     * 添加文件到ZIP
+     */
+    private void addToZip(ZipOutputStream zos, Path file, String entryName) throws IOException {
+        ZipEntry entry = new ZipEntry(entryName);
+        zos.putNextEntry(entry);
+        Files.copy(file, zos);
+        zos.closeEntry();
+    }
+    
+    /**
+     * 清理用户目录下的旧数据文件（CSV/JSON），只保留一份
+     */
+    private void cleanUserDataFiles(Path userDir) {
+        if (!Files.exists(userDir) || !Files.isDirectory(userDir)) {
+            return;
+        }
+        
+        try {
+            Files.list(userDir)
+                .filter(Files::isRegularFile)
+                .filter(path -> {
+                    String name = path.getFileName().toString().toLowerCase();
+                    return name.endsWith(".csv") || name.endsWith(".json");
+                })
+                .forEach(path -> {
+                    try {
+                        Files.delete(path);
+                        System.out.println("<=Deleted old file: " + path.getFileName());
+                    } catch (IOException e) {
+                        System.err.println("Failed to delete old file: " + path.getFileName() + " - " + e.getMessage());
+                    }
+                });
+        } catch (IOException e) {
+            System.err.println("Failed to clean user dir: " + e.getMessage());
+        }
     }
 }

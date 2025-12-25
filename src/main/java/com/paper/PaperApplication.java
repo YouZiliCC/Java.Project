@@ -1,5 +1,8 @@
 package com.paper;
 
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -19,6 +22,14 @@ import com.paper.utils.DatabaseInitializer;
 public class PaperApplication {
 
     public static void main(String[] args) {
+        // 设置控制台输出编码为 UTF-8，解决中文乱码
+        try {
+            System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+            System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8));
+        } catch (Exception e) {
+            // 忽略编码设置失败
+        }
+        
         // 初始化数据库（自动创建表结构）
         DatabaseInitializer.initialize();
         // 插入测试数据

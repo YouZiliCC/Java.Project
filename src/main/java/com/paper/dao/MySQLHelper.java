@@ -118,7 +118,7 @@ public class MySQLHelper {
             try {
                 connection.close();
             } catch (SQLException e) {
-                System.err.println("关闭数据库连接失败: " + e.getMessage());
+                System.err.println("Failed to close database connection: " + e.getMessage());
             }
         }
     }

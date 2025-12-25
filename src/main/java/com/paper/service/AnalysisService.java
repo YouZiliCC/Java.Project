@@ -54,6 +54,7 @@ public class AnalysisService {
     /**
      * 分析上传的文件
      * <p>支持JSON和CSV格式的论文数据文件</p>
+     * <p>直接调用Python脚本分析文件所在目录</p>
      * 
      * @param filePath 文件路径
      * @return 分析结果，包含统计信息
@@ -69,34 +70,18 @@ public class AnalysisService {
             return response;
         }
         
-        // 读取文件内容
-        StringBuilder content = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                content.append(line).append("\n");
-            }
-        }
-        
-        // 根据文件类型进行分析
+        // 验证文件类型
         String filename = file.getName().toLowerCase();
-        List<Paper> papers = new ArrayList<>();
-        
-        if (filename.endsWith(".json")) {
-            // 解析JSON文件
-            papers = objectMapper.readValue(content.toString(), 
-                    objectMapper.getTypeFactory().constructCollectionType(List.class, Paper.class));
-        } else if (filename.endsWith(".csv")) {
-            // 解析CSV文件
-            papers = parseCsvContent(content.toString());
-        } else {
+        if (!filename.endsWith(".json") && !filename.endsWith(".csv")) {
             response.put("success", false);
             response.put("message", "不支持的文件格式，请上传JSON或CSV文件");
             return response;
         }
         
-        // 调用Python进行分析
-        return analyzePapersData(papers);
+        // 直接使用文件所在目录调用Python分析
+        // 这样可以保留原始CSV/JSON格式，让Python脚本直接处理
+        String userDirPath = file.getParent();
+        return runPythonAnalysis(userDirPath);
     }
 
     /**
@@ -158,6 +143,7 @@ public class AnalysisService {
     
     /**
      * 调用Python脚本分析用户数据
+     * Python 脚本会将结果保存到 outputs/analysis_result.json 文件
      * 
      * @param userDirPath 用户目录路径
      * @return 分析结果
@@ -165,18 +151,49 @@ public class AnalysisService {
     private Map<String, Object> runPythonAnalysis(String userDirPath) throws Exception {
         Map<String, Object> response = new HashMap<>();
         
+        // 删除旧的结果文件，确保读取的是新结果
+        File oldResultFile = new File(userDirPath, "outputs/analysis_result.json");
+        if (oldResultFile.exists()) {
+            oldResultFile.delete();
+            System.out.println("[Debug] Deleted old result file: " + oldResultFile.getAbsolutePath());
+        }
+        
         ProcessBuilder processBuilder = new ProcessBuilder(
-                "python", PYTHON_MAIN_SCRIPT, 
+                "python", "-u", PYTHON_MAIN_SCRIPT, 
                 "--user-dir", userDirPath,
-                "--json"  // 输出JSON格式
+                "--json"  // 启用JSON模式（日志输出到stderr）
         );
         processBuilder.directory(new File("."));
         processBuilder.redirectErrorStream(false);  // 分离错误输出
         
+        // 设置 Python 环境变量，强制使用 UTF-8 编码
+        Map<String, String> env = processBuilder.environment();
+        env.put("PYTHONIOENCODING", "utf-8");
+        env.put("PYTHONUTF8", "1");
+        
+        System.out.println("[Debug] Starting Python analysis process...");
         Process process = processBuilder.start();
         
-        // 读取标准输出
+        // 使用多线程同时读取stdout和stderr，避免缓冲区满导致的死锁
         StringBuilder output = new StringBuilder();
+        StringBuilder errorOutput = new StringBuilder();
+        
+        // 异步读取stderr（日志信息）
+        Thread stderrThread = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    errorOutput.append(line).append("\n");
+                    System.err.println("[Python] " + line);
+                }
+            } catch (Exception e) {
+                System.err.println("[Error] Failed to read stderr: " + e.getMessage());
+            }
+        });
+        stderrThread.start();
+        
+        // 主线程读取stdout
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream(), "UTF-8"))) {
             String line;
@@ -185,18 +202,11 @@ public class AnalysisService {
             }
         }
         
-        // 读取错误输出（用于调试）
-        StringBuilder errorOutput = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                errorOutput.append(line).append("\n");
-                System.err.println("[Python] " + line);
-            }
-        }
+        // 等待stderr线程完成
+        stderrThread.join();
         
         int exitCode = process.waitFor();
+        System.out.println("[Debug] Python process exit code: " + exitCode);
         
         if (exitCode != 0) {
             response.put("success", false);
@@ -205,10 +215,19 @@ public class AnalysisService {
             return response;
         }
         
-        // 解析JSON输出
+        // 从文件读取分析结果
+        File resultFile = new File(userDirPath, "outputs/analysis_result.json");
+        if (!resultFile.exists()) {
+            response.put("success", false);
+            response.put("message", "分析结果文件不存在: " + resultFile.getAbsolutePath());
+            return response;
+        }
+        
         try {
+            System.out.println("[Debug] Reading result file: " + resultFile.getAbsolutePath());
+            
             @SuppressWarnings("unchecked")
-            Map<String, Object> analysisResult = objectMapper.readValue(output.toString(), Map.class);
+            Map<String, Object> analysisResult = objectMapper.readValue(resultFile, Map.class);
             
             // 检查Python返回的结果
             if (analysisResult.containsKey("success") && Boolean.FALSE.equals(analysisResult.get("success"))) {
@@ -226,8 +245,7 @@ public class AnalysisService {
             
         } catch (Exception e) {
             response.put("success", false);
-            response.put("message", "解析分析结果失败: " + e.getMessage());
-            response.put("rawOutput", output.toString());
+            response.put("message", "解析分析结果文件失败: " + e.getMessage());
             return response;
         }
     }
@@ -245,16 +263,38 @@ public class AnalysisService {
         objectMapper.writeValue(tempFile, papers);
         
         ProcessBuilder processBuilder = new ProcessBuilder(
-                "python", PYTHON_MAIN_SCRIPT, 
+                "python", "-u", PYTHON_MAIN_SCRIPT, 
                 "--user-dir", tempFile.getParent(),
                 "--json"
         );
         processBuilder.directory(new File("."));
-        processBuilder.redirectErrorStream(true);
+        processBuilder.redirectErrorStream(false);  // 分离错误输出，避免日志混入 JSON
+        
+        // 设置 Python 环境变量，强制使用 UTF-8 编码
+        Map<String, String> env = processBuilder.environment();
+        env.put("PYTHONIOENCODING", "utf-8");
+        env.put("PYTHONUTF8", "1");
         
         Process process = processBuilder.start();
         
+        // 使用多线程同时读取stdout和stderr，避免缓冲区满导致的死锁
         StringBuilder output = new StringBuilder();
+        
+        // 异步读取stderr（日志信息）
+        Thread stderrThread = new Thread(() -> {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getErrorStream(), "UTF-8"))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    System.err.println("[Python] " + line);
+                }
+            } catch (Exception e) {
+                System.err.println("[Error] Failed to read stderr: " + e.getMessage());
+            }
+        });
+        stderrThread.start();
+        
+        // 主线程读取stdout（JSON）
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(process.getInputStream(), "UTF-8"))) {
             String line;
@@ -262,6 +302,9 @@ public class AnalysisService {
                 output.append(line);
             }
         }
+        
+        // 等待stderr线程完成
+        stderrThread.join();
         
         int exitCode = process.waitFor();
         
@@ -307,7 +350,7 @@ public class AnalysisService {
             
             return aiService.chat(message, systemPrompt);
         } catch (Exception e) {
-            System.err.println("AI 调用失败: " + e.getMessage());
+            System.err.println("AI call failed: " + e.getMessage());
             return fallbackChat(message, context);
         }
     }

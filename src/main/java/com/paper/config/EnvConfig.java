@@ -57,7 +57,7 @@ public class EnvConfig {
         setDefaults();
         
         initialized = true;
-        System.out.println("[EnvConfig] 配置加载完成，共 " + config.size() + " 项");
+        System.out.println("[EnvConfig] Config loaded, total " + config.size() + " items");
     }
     
     private static void loadEnvFile() {
@@ -84,10 +84,10 @@ public class EnvConfig {
                             config.put(key, value);
                         }
                     }
-                    System.out.println("[EnvConfig] 已加载: " + envFile.getAbsolutePath());
+                    System.out.println("[EnvConfig] Loaded: " + envFile.getAbsolutePath());
                     return;
                 } catch (IOException e) {
-                    System.err.println("[EnvConfig] 读取失败: " + e.getMessage());
+                    System.err.println("[EnvConfig] Read failed: " + e.getMessage());
                 }
             }
         }

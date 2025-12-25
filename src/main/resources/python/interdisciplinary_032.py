@@ -33,18 +33,31 @@ class InterdisciplinaryAnalyzer:
 
     # ---------- 工具函数 ----------
     def parse_categories(self, value):
+        if value is None:
+            return []
+        if isinstance(value, float):
+            if pd.isna(value):
+                return []
+            return []  # float 值不是有效的类别
         if pd.isna(value):
             return []
 
         try:
             if isinstance(value, str):
                 value = value.strip()
+                if not value:
+                    return []
                 if value.startswith("[") and value.endswith("]"):
-                    return ast.literal_eval(value)
+                    parsed = ast.literal_eval(value)
+                    if isinstance(parsed, list):
+                        return [str(v).strip() for v in parsed if v]
+                    return []
                 for sep in [";", "|", "/"]:
                     if sep in value:
                         return [v.strip() for v in value.split(sep) if v.strip()]
                 return [value]
+            elif isinstance(value, (list, tuple)):
+                return [str(v).strip() for v in value if v]
         except Exception:
             pass
 
@@ -54,27 +67,44 @@ class InterdisciplinaryAnalyzer:
     def build_similarity_matrix(self, paper_categories: dict):
         all_categories = sorted({c for cats in paper_categories.values() for c in cats})
         n = len(all_categories)
+        
+        # 限制类别数量，避免内存问题
+        MAX_CATEGORIES = 500
+        if n > MAX_CATEGORIES:
+            # 只保留出现频率最高的类别
+            from collections import Counter
+            cat_freq = Counter()
+            for cats in paper_categories.values():
+                cat_freq.update(cats)
+            top_cats = [c for c, _ in cat_freq.most_common(MAX_CATEGORIES)]
+            all_categories = sorted(top_cats)
+            n = len(all_categories)
+        
         cat_to_idx = {c: i for i, c in enumerate(all_categories)}
-        co_matrix = np.zeros((n, n))
+        co_matrix = np.zeros((n, n), dtype=np.float32)  # 使用 float32 减少内存
 
         for cats in paper_categories.values():
-            if len(cats) < 2:
+            # 只保留在 all_categories 中的类别
+            valid_cats = [c for c in cats if c in cat_to_idx]
+            if len(valid_cats) < 2:
                 continue
-            for i, c1 in enumerate(cats):
+            for i, c1 in enumerate(valid_cats):
                 idx1 = cat_to_idx[c1]
                 co_matrix[idx1, idx1] += 1
-                for c2 in cats[i + 1:]:
+                for c2 in valid_cats[i + 1:]:
                     idx2 = cat_to_idx[c2]
                     co_matrix[idx1, idx2] += 1
                     co_matrix[idx2, idx1] += 1
 
-        sim = np.zeros((n, n))
+        sim = np.zeros((n, n), dtype=np.float32)
         for i in range(n):
             for j in range(n):
                 if i == j:
                     sim[i, j] = 1.0
                 else:
-                    denom = np.linalg.norm(co_matrix[i]) * np.linalg.norm(co_matrix[j])
+                    norm_i = np.linalg.norm(co_matrix[i])
+                    norm_j = np.linalg.norm(co_matrix[j])
+                    denom = norm_i * norm_j
                     sim[i, j] = np.dot(co_matrix[i], co_matrix[j]) / denom if denom > 0 else 0.0
 
         self.all_categories = all_categories
@@ -85,21 +115,31 @@ class InterdisciplinaryAnalyzer:
     def rao_stirling(self, categories):
         if not categories or len(set(categories)) <= 1:
             return 0.0
+        
+        # 安全检查
+        if not hasattr(self, 'all_categories') or not self.all_categories:
+            return 0.0
 
         total = len(categories)
         probs = Counter(categories)
 
-        p = np.zeros(len(self.all_categories))
+        n = len(self.all_categories)
+        p = np.zeros(n, dtype=np.float32)
         for cat, cnt in probs.items():
             if cat in self.cat_to_idx:
-                p[self.cat_to_idx[cat]] = cnt / total
+                idx = self.cat_to_idx[cat]
+                if 0 <= idx < n:
+                    p[idx] = cnt / total
 
-        diversity = 0.0
-        for i in range(len(p)):
-            for j in range(len(p)):
-                diversity += (1 - self.similarity_matrix[i, j]) * p[i] * p[j]
+        # 使用矩阵运算代替双重循环
+        try:
+            # diversity = sum((1 - S[i,j]) * p[i] * p[j])
+            outer_p = np.outer(p, p)
+            diversity = np.sum((1 - self.similarity_matrix) * outer_p)
+        except Exception:
+            diversity = 0.0
 
-        return diversity
+        return float(diversity)
 
     def td_index(self, categories):
         d = self.rao_stirling(categories)
@@ -149,16 +189,29 @@ def analyze_interdisciplinary(
     for _, row in df_all.iterrows():
         pid = str(row[id_col])
         journal = row[journal_col]
-        refs = row[refs_col]
-        try:
-            refs = ast.literal_eval(refs) if isinstance(refs, str) else refs
-        except Exception:
+        refs_raw = row[refs_col]
+        
+        # 安全解析 refs
+        refs = []
+        if refs_raw is None or (isinstance(refs_raw, float) and pd.isna(refs_raw)):
             refs = []
+        elif isinstance(refs_raw, str):
+            refs_raw = refs_raw.strip()
+            if refs_raw:
+                try:
+                    parsed = ast.literal_eval(refs_raw)
+                    if isinstance(parsed, (list, tuple)):
+                        refs = list(parsed)
+                except Exception:
+                    refs = []
+        elif isinstance(refs_raw, (list, tuple)):
+            refs = list(refs_raw)
 
         ref_cats = []
-        for r in refs or []:
-            if str(r) in paper_categories:
-                ref_cats.extend(paper_categories[str(r)])
+        for r in refs:
+            r_str = str(r)
+            if r_str in paper_categories:
+                ref_cats.extend(paper_categories[r_str])
 
         # TD 计算：没有引用或者没有分类也返回 0
         td = analyzer.td_index(ref_cats) if ref_cats else 0.0

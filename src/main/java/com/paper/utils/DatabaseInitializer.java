@@ -16,8 +16,8 @@ public class DatabaseInitializer {
      */
     public static void initialize() {
         System.out.println("======================================");
-        System.out.println("开始初始化数据库...");
-        System.out.println("数据库模式: " + (DatabaseConfig.isSQLiteMode() ? "SQLite (测试)" : "MySQL (生产)"));
+        System.out.println("[DB Init] Starting database initialization...");
+        System.out.println("[DB Init] Mode: " + (DatabaseConfig.isSQLiteMode() ? "SQLite (dev)" : "MySQL (prod)"));
         System.out.println("======================================");
         
         try {
@@ -41,13 +41,13 @@ public class DatabaseInitializer {
                 // 创建分析记录表
                 createAnalysisRecordTable(stmt);
                 
-                System.out.println("数据库初始化完成！");
+                System.out.println("[DB Init] Database initialization completed!");
                 
             }
         } catch (ClassNotFoundException e) {
-            System.err.println("数据库驱动加载失败: " + e.getMessage());
+            System.err.println("Database driver load failed: " + e.getMessage());
         } catch (SQLException e) {
-            System.err.println("数据库初始化失败: " + e.getMessage());
+            System.err.println("Database initialization failed: " + e.getMessage());
         }
     }
     
@@ -90,7 +90,7 @@ public class DatabaseInitializer {
             """;
         }
         stmt.executeUpdate(sql);
-        System.out.println("✓ 用户表 (users) 创建成功");
+        System.out.println("  [OK] Table 'users' created");
     }
     
     /**
@@ -144,7 +144,7 @@ public class DatabaseInitializer {
             """;
         }
         stmt.executeUpdate(sql);
-        System.out.println("✓ 论文表 (papers) 创建成功");
+        System.out.println("  [OK] Table 'papers' created");
     }
     
     /**
@@ -172,7 +172,7 @@ public class DatabaseInitializer {
             """;
         }
         stmt.executeUpdate(sql);
-        System.out.println("✓ 作者表 (authors) 创建成功");
+        System.out.println("  [OK] Table 'authors' created");
     }
     
     /**
@@ -196,7 +196,7 @@ public class DatabaseInitializer {
             """;
         }
         stmt.executeUpdate(sql);
-        System.out.println("✓ 关键词表 (keywords) 创建成功");
+        System.out.println("  [OK] Table 'keywords' created");
     }
     
     /**
@@ -242,6 +242,6 @@ public class DatabaseInitializer {
                 // 索引可能已存在，忽略
             }
         }
-        System.out.println("✓ 分析记录表 (analysis_record) 创建成功");
+        System.out.println("  [OK] Table 'analysis_record' created");
     }
 }

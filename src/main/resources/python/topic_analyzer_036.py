@@ -344,7 +344,6 @@ def analyze_topic_entropy(df: pd.DataFrame,
     跨学科性分析（香农熵方法）
     【仅使用作者关键词 keywords】
     """
-
     results = []
 
     for idx, row in df.iterrows():
