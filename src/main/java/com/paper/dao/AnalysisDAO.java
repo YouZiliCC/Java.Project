@@ -24,7 +24,7 @@ public class AnalysisDAO {
      * 保存文件上传记录
      */
     public String saveUploadRecord(String username, String filename, String originalName, Long fileSize) {
-        String sql = "INSERT INTO ANALYSIS_RECORD (username, filename, original_name, file_size) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO analysis_record (username, filename, original_name, file_size) VALUES (?, ?, ?, ?)";
         return mysqlHelper.executeSQL(sql, username, filename, originalName, fileSize);
     }
     
@@ -32,7 +32,7 @@ public class AnalysisDAO {
      * 更新分析结果
      */
     public String updateAnalysisResult(String filename, String analysisResult) {
-        String sql = "UPDATE ANALYSIS_RECORD SET analysis_result = ? WHERE filename = ?";
+        String sql = "UPDATE analysis_record SET analysis_result = ? WHERE filename = ?";
         return mysqlHelper.executeSQL(sql, analysisResult, filename);
     }
     
@@ -40,7 +40,7 @@ public class AnalysisDAO {
      * 根据文件名获取记录
      */
     public AnalysisRecord getByFilename(String filename) {
-        String sql = "SELECT * FROM ANALYSIS_RECORD WHERE filename = ?";
+        String sql = "SELECT * FROM analysis_record WHERE filename = ?";
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, filename);
         
         String error = (String) result.get("error");
@@ -62,7 +62,7 @@ public class AnalysisDAO {
      * 获取用户的分析历史
      */
     public List<AnalysisRecord> getHistoryByUsername(String username, int limit) {
-        String sql = "SELECT * FROM ANALYSIS_RECORD WHERE username = ? AND analysis_result IS NOT NULL ORDER BY created_at DESC LIMIT ?";
+        String sql = "SELECT * FROM analysis_record WHERE username = ? AND analysis_result IS NOT NULL ORDER BY created_at DESC LIMIT ?";
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, username, limit);
         
         List<AnalysisRecord> records = new ArrayList<>();
@@ -85,7 +85,7 @@ public class AnalysisDAO {
      * 获取用户最近一次分析结果
      */
     public AnalysisRecord getLatestByUsername(String username) {
-        String sql = "SELECT * FROM ANALYSIS_RECORD WHERE username = ? AND analysis_result IS NOT NULL ORDER BY created_at DESC LIMIT 1";
+        String sql = "SELECT * FROM analysis_record WHERE username = ? AND analysis_result IS NOT NULL ORDER BY created_at DESC LIMIT 1";
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, username);
         
         String error = (String) result.get("error");
@@ -107,7 +107,7 @@ public class AnalysisDAO {
      * 删除分析记录
      */
     public String deleteByFilename(String filename) {
-        String sql = "DELETE FROM ANALYSIS_RECORD WHERE filename = ?";
+        String sql = "DELETE FROM analysis_record WHERE filename = ?";
         return mysqlHelper.executeSQL(sql, filename);
     }
     

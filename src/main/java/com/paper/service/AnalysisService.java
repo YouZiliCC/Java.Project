@@ -39,9 +39,6 @@ public class AnalysisService {
     /** JSON对象映射器 */
     private static final ObjectMapper objectMapper = new ObjectMapper();
     
-    /** 数据库查询限制 */
-    private static final int MAX_QUERY_LIMIT = 1000;
-    
     private final MySQLHelper mysqlHelper;
 
     /**
@@ -123,6 +120,82 @@ public class AnalysisService {
         }
         
         return analyzePapersData(papers);
+    }
+
+    /**
+     * 分析用户目录下的所有CSV/JSON文件
+     * <p>读取用户上传目录下的所有数据文件并进行统计分析</p>
+     * 
+     * @param userDirPath 用户目录路径
+     * @return 分析结果
+     * @throws Exception 文件读取或分析失败
+     */
+    public Map<String, Object> analyzeUserDirectory(String userDirPath) throws Exception {
+        Map<String, Object> response = new HashMap<>();
+        
+        File userDir = new File(userDirPath);
+        if (!userDir.exists() || !userDir.isDirectory()) {
+            response.put("success", false);
+            response.put("message", "用户目录不存在，请先上传文件");
+            return response;
+        }
+        
+        // 获取目录下所有CSV和JSON文件
+        File[] dataFiles = userDir.listFiles((dir, name) -> {
+            String lower = name.toLowerCase();
+            return lower.endsWith(".csv") || lower.endsWith(".json");
+        });
+        
+        if (dataFiles == null || dataFiles.length == 0) {
+            response.put("success", false);
+            response.put("message", "目录下没有数据文件，请先上传CSV或JSON文件");
+            return response;
+        }
+        
+        // 合并所有文件中的论文数据
+        List<Paper> allPapers = new ArrayList<>();
+        List<String> processedFiles = new ArrayList<>();
+        
+        for (File file : dataFiles) {
+            try {
+                StringBuilder content = new StringBuilder();
+                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        content.append(line).append("\n");
+                    }
+                }
+                
+                List<Paper> papers;
+                String filename = file.getName().toLowerCase();
+                
+                if (filename.endsWith(".json")) {
+                    papers = objectMapper.readValue(content.toString(),
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, Paper.class));
+                } else {
+                    papers = parseCsvContent(content.toString());
+                }
+                
+                allPapers.addAll(papers);
+                processedFiles.add(file.getName());
+                
+            } catch (Exception e) {
+                System.err.println("处理文件失败: " + file.getName() + " - " + e.getMessage());
+            }
+        }
+        
+        if (allPapers.isEmpty()) {
+            response.put("success", false);
+            response.put("message", "无法从文件中读取到有效的论文数据");
+            return response;
+        }
+        
+        // 调用分析
+        Map<String, Object> result = analyzePapersData(allPapers);
+        result.put("processedFiles", processedFiles);
+        result.put("totalFiles", processedFiles.size());
+        
+        return result;
     }
 
     /**
@@ -221,10 +294,11 @@ public class AnalysisService {
 
     /**
      * 从数据库获取所有论文
+     * 使用 papers 表（按文档定义的字段结构）
      */
     private List<Paper> getAllPapers() throws SQLException {
         List<Paper> papers = new ArrayList<>();
-        String sql = "SELECT * FROM PAPER LIMIT 1000";
+        String sql = "SELECT * FROM papers";
         
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql);
         ResultSet rs = null;
@@ -235,18 +309,23 @@ public class AnalysisService {
                 while (rs.next()) {
                     Paper paper = new Paper();
                     paper.setTitle(rs.getString("title"));
-                    paper.setAuthor(rs.getString("author"));
+                    paper.setDoi(rs.getString("doi"));
                     paper.setJournal(rs.getString("journal"));
-                    java.sql.Date publishDate = rs.getDate("publish_date");
-                    if (publishDate != null) {
-                        paper.setPublishDate(publishDate.toLocalDate());
-                    }
-                    paper.setCitations(rs.getInt("citations"));
-                    paper.setRefs(rs.getInt("refs"));
-                    paper.setTarget(rs.getString("target"));
-                    paper.setCountry(rs.getString("country"));
                     paper.setKeywords(rs.getString("keywords"));
-                    paper.setAbstractText(rs.getString("abstract_text"));
+                    // publish_date 在新表中是年份整数
+                    int publishYear = rs.getInt("publish_date");
+                    if (publishYear > 0) {
+                        paper.setPublishDate(java.time.LocalDate.of(publishYear, 1, 1));
+                    }
+                    paper.setTarget(rs.getString("target"));
+                    paper.setAbstractText(rs.getString("abstract"));
+                    paper.setCategory(rs.getString("category"));
+                    // citations 在新表中是TEXT类型（参考文献列表）
+                    String citationsText = rs.getString("citations");
+                    if (citationsText != null) {
+                        // 简单统计引用数（按分隔符）
+                        paper.setCitations(citationsText.split(";").length);
+                    }
                     papers.add(paper);
                 }
             }

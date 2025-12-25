@@ -1,4 +1,4 @@
-package com.paper.service;
+﻿package com.paper.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -46,7 +46,7 @@ public class UserService {
      * 用户登录验证
      */
     public boolean login(User user) throws SQLException {
-        String sql = "SELECT PASSWORD FROM USER WHERE uname = ?";
+        String sql = "SELECT PASSWORD FROM users WHERE uname = ?";
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, user.getUname());
         
         ResultSet rs = null;
@@ -68,7 +68,7 @@ public class UserService {
      * 修改密码
      */
     public String updatePassword(User user) {
-        String sql = "UPDATE USER SET password = ? WHERE uname = ?";
+        String sql = "UPDATE users SET password = ? WHERE uname = ?";
         return mysqlHelper.executeSQL(sql, user.getPassword(), user.getUname());
     }
 
@@ -78,7 +78,7 @@ public class UserService {
     public String updateEmail(String uname, String newEmail) throws SQLException {
         // 检查新邮箱是否已被其他用户使用
         if (newEmail != null && !newEmail.isEmpty()) {
-            String checkSql = "SELECT * FROM USER WHERE email = ? AND uname != ?";
+            String checkSql = "SELECT * FROM users WHERE email = ? AND uname != ?";
             Map<String, Object> result = mysqlHelper.executeSQLWithSelect(checkSql, newEmail, uname);
             ResultSet rs = null;
             try {
@@ -93,7 +93,7 @@ public class UserService {
             }
         }
         
-        String sql = "UPDATE USER SET email = ? WHERE uname = ?";
+        String sql = "UPDATE users SET email = ? WHERE uname = ?";
         String result = mysqlHelper.executeSQL(sql, newEmail, uname);
         return result.isEmpty() ? "success" : result;
     }
@@ -102,7 +102,7 @@ public class UserService {
      * 根据用户名获取用户信息
      */
     public User getUserByUsername(String uname) throws SQLException {
-        String sql = "SELECT uname, email FROM USER WHERE uname = ?";
+        String sql = "SELECT uname, email FROM users WHERE uname = ?";
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, uname);
         
         ResultSet rs = null;
@@ -209,7 +209,7 @@ public class UserService {
         */
         
         // 执行注册
-        String sql = "INSERT INTO USER (uname, password, email) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO users (uname, password, email) VALUES (?, ?, ?)";
         String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
         String result = mysqlHelper.executeSQL(sql, user.getUname(), hashedPassword, user.getEmail());
         
@@ -251,7 +251,7 @@ public class UserService {
         }
         
         // 执行注册
-        String sql = "INSERT INTO USER (uname, password, email) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO users (uname, password, email) VALUES (?, ?, ?)";
         String hashedPassword = BCrypt.hashpw(user.getPassword(), BCrypt.gensalt());
         String email = (user.getEmail() != null && !user.getEmail().isEmpty()) ? user.getEmail() : null;
         String result = mysqlHelper.executeSQL(sql, user.getUname(), hashedPassword, email);
@@ -276,7 +276,7 @@ public class UserService {
      * 检查邮箱是否已存在
      */
     private boolean isEmailExists(String email) throws SQLException {
-        String sql = "SELECT * FROM USER WHERE email = ?";
+        String sql = "SELECT * FROM users WHERE email = ?";
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, email);
         
         ResultSet rs = null;
@@ -295,7 +295,7 @@ public class UserService {
      * 检查用户名是否已存在
      */
     private boolean isUsernameExists(String username) throws SQLException {
-        String sql = "SELECT * FROM USER WHERE uname = ?";
+        String sql = "SELECT * FROM users WHERE uname = ?";
         Map<String, Object> result = mysqlHelper.executeSQLWithSelect(sql, username);
         
         ResultSet rs = null;

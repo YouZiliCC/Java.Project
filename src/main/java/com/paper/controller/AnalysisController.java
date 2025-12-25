@@ -33,10 +33,21 @@ import com.paper.utils.ValidationUtils;
 @RequestMapping("/analysis")
 public class AnalysisController {
 
-    private static final String UPLOAD_DIR = "uploads/";
+    // 用户上传文件存储目录：uploads/{username}/
+    private static final String UPLOAD_BASE_DIR = "uploads/";
     private static final List<String> ALLOWED_EXTENSIONS = List.of(".json", ".csv");
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
     private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * 获取用户上传目录
+     */
+    private Path getUserUploadDir(String username) {
+        if (ValidationUtils.isBlank(username)) {
+            return Paths.get(UPLOAD_BASE_DIR, "anonymous");
+        }
+        return Paths.get(UPLOAD_BASE_DIR, username);
+    }
 
     /**
      * 上传数据文件（需要用户名）
@@ -62,7 +73,8 @@ public class AnalysisController {
         }
         
         try {
-            Path uploadPath = Paths.get(UPLOAD_DIR);
+            // 使用用户专属目录
+            Path uploadPath = getUserUploadDir(username);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
@@ -86,6 +98,7 @@ public class AnalysisController {
             data.put("filename", uniqueFilename);
             data.put("originalName", originalFilename);
             data.put("size", file.getSize());
+            data.put("userDir", uploadPath.toString());
             return ResponseUtils.success("文件上传成功", data);
             
         } catch (IOException e) {
@@ -109,7 +122,13 @@ public class AnalysisController {
                 if (!ValidationUtils.isSafeFilename(filename)) {
                     return ResponseUtils.error("无效的文件名");
                 }
-                result = analysisService.analyzeFile(UPLOAD_DIR + filename);
+                // 使用用户专属目录
+                Path userDir = getUserUploadDir(username);
+                result = analysisService.analyzeFile(userDir.resolve(filename).toString());
+            } else if (ValidationUtils.isNotBlank(username)) {
+                // 分析用户目录下的所有文件
+                Path userDir = getUserUploadDir(username);
+                result = analysisService.analyzeUserDirectory(userDir.toString());
             } else {
                 result = analysisService.analyzeAllData();
             }
@@ -282,13 +301,13 @@ public class AnalysisController {
     }
 
     /**
-     * 获取已上传的文件列表
+     * 获取已上传的文件列表（用户专属）
      */
     @GetMapping("/files")
     @ResponseBody
-    public Map<String, Object> listFiles() {
+    public Map<String, Object> listFiles(@RequestParam(required = false) String username) {
         try {
-            Path uploadPath = Paths.get(UPLOAD_DIR);
+            Path uploadPath = getUserUploadDir(username);
             List<String> fileList = new ArrayList<>();
             
             if (Files.exists(uploadPath) && Files.isDirectory(uploadPath)) {
@@ -299,6 +318,7 @@ public class AnalysisController {
             
             Map<String, Object> data = new HashMap<>();
             data.put("files", fileList);
+            data.put("userDir", uploadPath.toString());
             return ResponseUtils.success("success", data);
             
         } catch (IOException e) {
@@ -311,7 +331,9 @@ public class AnalysisController {
      */
     @PostMapping("/delete")
     @ResponseBody
-    public Map<String, Object> deleteFile(@RequestParam String filename) {
+    public Map<String, Object> deleteFile(
+            @RequestParam String filename,
+            @RequestParam(required = false) String username) {
         if (!ValidationUtils.isSafeFilename(filename)) {
             return ResponseUtils.error("无效的文件名");
         }
@@ -326,8 +348,8 @@ public class AnalysisController {
                 System.err.println("删除数据库记录失败: " + e.getMessage());
             }
             
-            // 删除文件
-            Path filePath = Paths.get(UPLOAD_DIR, filename);
+            // 删除文件（从用户目录）
+            Path filePath = getUserUploadDir(username).resolve(filename);
             if (Files.exists(filePath)) {
                 Files.delete(filePath);
                 return ResponseUtils.success("文件删除成功");
