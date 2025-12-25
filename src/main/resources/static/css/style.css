@@ -924,8 +924,43 @@ body {
 
 .metric-card {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    border-left: 4px solid var(--primary-color);
     margin-bottom: 1rem;
+    border-radius: var(--radius);
+}
+
+.metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+}
+
+.metric-header:hover .expand-icon {
+    color: var(--primary-color);
+}
+
+.metric-title-area {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.metric-title-area h4 {
+    margin: 0;
+}
+
+.metric-count {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    background: rgba(0,0,0,0.08);
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+}
+
+.expand-icon {
+    color: var(--text-light);
+    transition: color 0.2s;
 }
 
 .metric-desc {
@@ -963,6 +998,80 @@ body {
 
 .metric-table td:last-child {
     font-weight: 500;
+    color: var(--primary-color);
+}
+
+/* 排名徽章 */
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: bold;
+    margin-right: 0.5rem;
+    background: #e0e0e0;
+    color: #666;
+}
+
+.rank-1 .rank-badge {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(255, 165, 0, 0.3);
+}
+
+.rank-2 .rank-badge {
+    background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(160, 160, 160, 0.3);
+}
+
+.rank-3 .rank-badge {
+    background: linear-gradient(135deg, #CD7F32 0%, #B87333 100%);
+    color: white;
+    box-shadow: 0 2px 4px rgba(205, 127, 50, 0.3);
+}
+
+.rank-other {
+    background: #f0f0f0;
+    color: #888;
+}
+
+/* 展开区域 */
+.metric-expand-area {
+    border-top: 1px dashed var(--border-color);
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.btn-expand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.6rem;
+    margin-top: 0.5rem;
+    background: transparent;
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius);
+    color: var(--text-light);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-expand:hover {
+    background: rgba(0,0,0,0.03);
+    border-color: var(--primary-color);
     color: var(--primary-color);
 }
 

@@ -237,118 +237,67 @@ function displayAnalysisResult(data) {
     
     // 1. 颠覆性指数 (Disruption)
     if (analysis.disruption && analysis.disruption.length > 0) {
-        html += `
-            <div class="result-section metric-card">
-                <h4><i class="fas fa-bolt"></i> 颠覆性指数 (Disruption)</h4>
-                <p class="metric-desc">衡量期刊发表论文的创新突破程度</p>
-                <div class="metric-table">
-                    <table>
-                        <thead><tr><th>期刊</th><th>百分位分数</th></tr></thead>
-                        <tbody>
-                            ${analysis.disruption.map(item => `
-                                <tr>
-                                    <td>${item.journal || item.Journal || '-'}</td>
-                                    <td>${formatScore(item.percent_score || item.score)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        html += renderMetricCard(
+            'disruption',
+            '颠覆性指数 (Disruption)',
+            'fas fa-bolt',
+            '衡量期刊发表论文的创新突破程度',
+            sortByScore(analysis.disruption, 'percent_score'),
+            ['期刊', '百分位分数'],
+            (item) => [item.journal || item.Journal || '-', formatScore(item.percent_score || item.score)]
+        );
     }
     
     // 2. 跨学科性 (Interdisciplinary)
     if (analysis.interdisciplinary && analysis.interdisciplinary.length > 0) {
-        html += `
-            <div class="result-section metric-card">
-                <h4><i class="fas fa-project-diagram"></i> 跨学科性 (Interdisciplinary)</h4>
-                <p class="metric-desc">衡量期刊研究的跨领域融合程度</p>
-                <div class="metric-table">
-                    <table>
-                        <thead><tr><th>期刊</th><th>百分位分数</th></tr></thead>
-                        <tbody>
-                            ${analysis.interdisciplinary.map(item => `
-                                <tr>
-                                    <td>${item.journal || item.Journal || '-'}</td>
-                                    <td>${formatScore(item.percent_score || item.score)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        html += renderMetricCard(
+            'interdisciplinary',
+            '跨学科性 (Interdisciplinary)',
+            'fas fa-project-diagram',
+            '衡量期刊研究的跨领域融合程度',
+            sortByScore(analysis.interdisciplinary, 'percent_score'),
+            ['期刊', '百分位分数'],
+            (item) => [item.journal || item.Journal || '-', formatScore(item.percent_score || item.score)]
+        );
     }
     
     // 3. 新颖性 (Novelty)
     if (analysis.novelty && analysis.novelty.length > 0) {
-        html += `
-            <div class="result-section metric-card">
-                <h4><i class="fas fa-lightbulb"></i> 新颖性 (Novelty)</h4>
-                <p class="metric-desc">衡量期刊发表内容的创新程度</p>
-                <div class="metric-table">
-                    <table>
-                        <thead><tr><th>期刊</th><th>百分位分数</th></tr></thead>
-                        <tbody>
-                            ${analysis.novelty.map(item => `
-                                <tr>
-                                    <td>${item.journal || item.Journal || '-'}</td>
-                                    <td>${formatScore(item.percent_score || item.score)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        html += renderMetricCard(
+            'novelty',
+            '新颖性 (Novelty)',
+            'fas fa-lightbulb',
+            '衡量期刊发表内容的创新程度',
+            sortByScore(analysis.novelty, 'percent_score'),
+            ['期刊', '百分位分数'],
+            (item) => [item.journal || item.Journal || '-', formatScore(item.percent_score || item.score)]
+        );
     }
     
     // 4. 主题复杂度 (Topic Entropy)
     if (analysis.topic && analysis.topic.length > 0) {
-        html += `
-            <div class="result-section metric-card">
-                <h4><i class="fas fa-puzzle-piece"></i> 主题复杂度 (Topic)</h4>
-                <p class="metric-desc">衡量期刊研究主题的多样性</p>
-                <div class="metric-table">
-                    <table>
-                        <thead><tr><th>期刊</th><th>百分位分数</th></tr></thead>
-                        <tbody>
-                            ${analysis.topic.map(item => `
-                                <tr>
-                                    <td>${item.journal || item.Journal || '-'}</td>
-                                    <td>${formatScore(item.percent_score || item.score)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        html += renderMetricCard(
+            'topic',
+            '主题复杂度 (Topic)',
+            'fas fa-puzzle-piece',
+            '衡量期刊研究主题的多样性',
+            sortByScore(analysis.topic, 'percent_score'),
+            ['期刊', '百分位分数'],
+            (item) => [item.journal || item.Journal || '-', formatScore(item.percent_score || item.score)]
+        );
     }
     
     // 5. 主题热度 (Theme)
     if (analysis.theme && analysis.theme.length > 0) {
-        html += `
-            <div class="result-section metric-card">
-                <h4><i class="fas fa-fire"></i> 主题热度 (Theme)</h4>
-                <p class="metric-desc">衡量期刊对热门主题的响应度</p>
-                <div class="metric-table">
-                    <table>
-                        <thead><tr><th>期刊</th><th>主题集中度</th><th>热点响应度</th></tr></thead>
-                        <tbody>
-                            ${analysis.theme.map(item => `
-                                <tr>
-                                    <td>${item.journal || item.Journal || '-'}</td>
-                                    <td>${formatScore(item.theme_concentration)}</td>
-                                    <td>${formatScore(item.hot_response)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        html += renderMetricCard(
+            'theme',
+            '主题热度 (Theme)',
+            'fas fa-fire',
+            '衡量期刊对热门主题的响应度',
+            sortByScore(analysis.theme, 'theme_concentration'),
+            ['期刊', '主题集中度', '热点响应度'],
+            (item) => [item.journal || item.Journal || '-', formatScore(item.theme_concentration), formatScore(item.hot_response)]
+        );
     }
     
     html += '</div>';  // end metrics-section
@@ -366,6 +315,88 @@ function displayAnalysisResult(data) {
     `;
     
     container.innerHTML = html;
+}
+
+// 排序函数：按分数从高到低
+function sortByScore(arr, scoreField) {
+    if (!arr || !Array.isArray(arr)) return [];
+    return [...arr].sort((a, b) => {
+        const scoreA = parseFloat(a[scoreField] || a.score || a.percent_score || 0);
+        const scoreB = parseFloat(b[scoreField] || b.score || b.percent_score || 0);
+        return scoreB - scoreA;  // 从高到低
+    });
+}
+
+// 渲染可展开的指标卡片
+function renderMetricCard(id, title, iconClass, desc, items, headers, rowRenderer) {
+    const previewCount = 5;
+    const hasMore = items.length > previewCount;
+    const totalCount = items.length;
+    
+    return `
+        <div class="result-section metric-card" id="metric-${id}">
+            <div class="metric-header" onclick="toggleMetricExpand('${id}')">
+                <div class="metric-title-area">
+                    <h4><i class="${iconClass}"></i> ${title}</h4>
+                </div>
+            </div>
+            <p class="metric-desc">${desc}</p>
+            <div class="metric-table">
+                <table>
+                    <thead><tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr></thead>
+                    <tbody id="metric-body-${id}">
+                        ${items.slice(0, previewCount).map((item, idx) => {
+                            const cells = rowRenderer(item);
+                            return `<tr class="rank-${idx < 3 ? idx + 1 : 'normal'}">
+                                <td><span class="rank-badge">${idx + 1}</span> ${cells[0]}</td>
+                                ${cells.slice(1).map(c => `<td>${c}</td>`).join('')}
+                            </tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+                ${hasMore ? `
+                    <div class="metric-expand-area" id="expand-area-${id}" style="display: none;">
+                        <table>
+                            <tbody>
+                                ${items.slice(previewCount).map((item, idx) => {
+                                    const cells = rowRenderer(item);
+                                    const rank = previewCount + idx + 1;
+                                    return `<tr>
+                                        <td><span class="rank-badge rank-other">${rank}</span> ${cells[0]}</td>
+                                        ${cells.slice(1).map(c => `<td>${c}</td>`).join('')}
+                                    </tr>`;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="btn-expand" id="btn-expand-${id}" onclick="toggleMetricExpand('${id}')">
+                        <i class="fas fa-chevron-down"></i> 展开全部 (${totalCount - previewCount} 更多)
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+// 切换展开/折叠
+function toggleMetricExpand(id) {
+    const expandArea = document.getElementById(`expand-area-${id}`);
+    const btn = document.getElementById(`btn-expand-${id}`);
+    const icon = document.getElementById(`expand-icon-${id}`);
+    
+    if (!expandArea) return;
+    
+    const isExpanded = expandArea.style.display !== 'none';
+    
+    if (isExpanded) {
+        expandArea.style.display = 'none';
+        if (btn) btn.innerHTML = `<i class="fas fa-chevron-down"></i> 展开全部`;
+        if (icon) icon.innerHTML = `<i class="fas fa-chevron-down"></i>`;
+    } else {
+        expandArea.style.display = 'block';
+        if (btn) btn.innerHTML = `<i class="fas fa-chevron-up"></i> 收起`;
+        if (icon) icon.innerHTML = `<i class="fas fa-chevron-up"></i>`;
+    }
 }
 
 // 格式化分数显示
