@@ -119,7 +119,7 @@ public class EnvConfig {
         config.putIfAbsent(DEEPSEEK_MODEL, "deepseek-chat");
         
         config.putIfAbsent(SERVER_HOST, "0.0.0.0");
-        config.putIfAbsent(SERVER_PORT, "8080");
+        config.putIfAbsent(SERVER_PORT, "5000");
         config.putIfAbsent(LOG_LEVEL, "INFO");
     }
     
