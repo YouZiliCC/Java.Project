@@ -61,6 +61,7 @@ dependencies {
 	implementation 'org.mindrot:jbcrypt:0.4'
 
     // 其他示例依赖（如 JPA）
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'jakarta.persistence:jakarta.persistence-api:3.1.0'
 	implementation 'com.sun.mail:jakarta.mail:2.0.1'
     implementation 'com.sun.activation:jakarta.activation:2.0.1'
@@ -74,6 +75,9 @@ dependencies {
     // Jackson库，用于JSON序列化和反序列化
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2'
+    
+    // HTTP客户端（用于AI API调用）
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'
 }
 
 tasks.named('test') {

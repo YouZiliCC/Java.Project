@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>期刊对比</title>
+  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- 导航栏容器 -->
+  <div id="navbar-container">
+    <nav class="navbar">
+      <a href="http://pkume.com/index.html" class="navbar-brand">
+        <i class="fas fa-graduation-cap"></i>
+        PaperMaster
+      </a>
+      <div class="navbar-menu">
+        <a href="http://pkume.com/index.html">首页</a>
+        <a href="http://127.0.0.1:8080/">期刊列表</a>
+        <a href="http://pkume.com/analysis.html">期刊分析</a>
+        <a href="http://pkume.com/login.html">登录</a><a href="http://pkume.com/register.html" class="btn btn-primary">注册</a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container">
+    <header class="header">
+      <div class="row">
+        <div>
+          <h1>期刊对比</h1>
+          <div class="muted">选择两本期刊对比（默认取各自最新年份指标）</div>
+        </div>
+        <div>
+          <a class="btn" href="{{ request.url_for('journals_page') }}">返回列表</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <form class="compare-form" method="get" action="{{ request.url_for('compare_page') }}">
+        <div class="field">
+          <div class="label">期刊 A</div>
+          <select class="select" name="j1" required>
+            <option value="" disabled {% if not j1 %}selected{% endif %}>请选择</option>
+            {% for j in journals %}
+              <option value="{{ j }}" {% if j1 == j %}selected{% endif %}>{{ j }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <div class="label">期刊 B</div>
+          <select class="select" name="j2" required>
+            <option value="" disabled {% if not j2 %}selected{% endif %}>请选择</option>
+            {% for j in journals %}
+              <option value="{{ j }}" {% if j2 == j %}selected{% endif %}>{{ j }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <div class="label">&nbsp;</div>
+          <button class="btn btn-primary" type="submit">开始对比</button>
+        </div>
+      </form>
+      <div class="muted">雷达图元素：内容前沿性=disruption+novelty；学科开放性=interdisciplinary；主题集中度=theme_concentration；主题多样性=topic；热点响应度=hot_response</div>
+    </section>
+
+    {% if a_row and b_row %}
+    <section class="card">
+      <h2>雷达图（叠加）</h2>
+      <div class="radar-wrap"><canvas id="radarOverlay" height="260"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>雷达图（分别）</h2>
+      <div class="two-col">
+        <div>
+          <div class="subhead">{{ j1 }}（{{ a_row.get('year','') }}）</div>
+          <div class="radar-wrap"><canvas id="radarA" height="260"></canvas></div>
+        </div>
+        <div>
+          <div class="subhead">{{ j2 }}（{{ b_row.get('year','') }}）</div>
+          <div class="radar-wrap"><canvas id="radarB" height="260"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>关键指标对比（柱状图）</h2>
+      <div class="radar-wrap"><canvas id="barCompare" height="220"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>对比分析</h2>
+      <div class="muted">按评价维度对比（基于最新年份）</div>
+      <ul class="analysis">
+        {% for line in analysis_lines %}
+          <li>{{ line }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>评语对比</h2>
+      <div class="two-col">
+        <div class="comment">
+          <div class="comment-title">{{ j1 }}</div>
+          {% for k, v in a_comments.items() %}
+            <div class="comment-k">{{ k }}</div>
+            <div class="comment-body">{{ v }}</div>
+          {% endfor %}
+        </div>
+        <div class="comment">
+          <div class="comment-title">{{ j2 }}</div>
+          {% for k, v in b_comments.items() %}
+            <div class="comment-k">{{ k }}</div>
+            <div class="comment-body">{{ v }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Top Keywords (2021-2025)</h2>
+      <div class="two-col">
+        <div>
+          <div class="subhead">{{ j1 }}</div>
+          <div class="keywords-grid">
+            {% for y, arr in a_keywords.items() %}
+            <div class="kw">
+              <div class="kw-title">{{ y }}</div>
+              {% if arr and (arr|length > 0) %}
+                <div class="tag-list">
+                  {% for kw in arr %}
+                    <span class="tag">{{ kw }}</span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="muted">（无数据）</div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div>
+          <div class="subhead">{{ j2 }}</div>
+          <div class="keywords-grid">
+            {% for y, arr in b_keywords.items() %}
+            <div class="kw">
+              <div class="kw-title">{{ y }}</div>
+              {% if arr and (arr|length > 0) %}
+                <div class="tag-list">
+                  {% for kw in arr %}
+                    <span class="tag">{{ kw }}</span>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="muted">（无数据）</div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script id="overlay-json" type="application/json">{{ overlay_json | safe }}</script>
+    <script id="a-radar-json" type="application/json">{{ a_radar_json | safe }}</script>
+    <script id="b-radar-json" type="application/json">{{ b_radar_json | safe }}</script>
+    <script id="bar-json" type="application/json">{{ bar_json | safe }}</script>
+
+    <script>
+      const overlay = JSON.parse(document.getElementById('overlay-json').textContent);
+      const aRadar = JSON.parse(document.getElementById('a-radar-json').textContent);
+      const bRadar = JSON.parse(document.getElementById('b-radar-json').textContent);
+      const bar = JSON.parse(document.getElementById('bar-json').textContent);
+
+      function radarOptions(maxV) {
+        return {
+          responsive: true,
+          scales: {
+            r: {
+              beginAtZero: true,
+              suggestedMax: maxV || 100,
+              ticks: { stepSize: 50 }
+            }
+          }
+        };
+      }
+
+      if (overlay) {
+        new Chart(document.getElementById('radarOverlay'), {
+          type: 'radar',
+          data: {
+            labels: overlay.labels,
+            datasets: [
+              { label: overlay.a.name, data: overlay.a.values, fill: true, borderWidth: 2 },
+              { label: overlay.b.name, data: overlay.b.values, fill: true, borderWidth: 2 },
+            ]
+          },
+          options: radarOptions(overlay.max)
+        });
+      }
+
+      if (aRadar) {
+        new Chart(document.getElementById('radarA'), {
+          type: 'radar',
+          data: { labels: aRadar.labels, datasets: [{ label: '评分', data: aRadar.values, fill: true, borderWidth: 2 }] },
+          options: radarOptions(aRadar.max)
+        });
+      }
+
+      if (bRadar) {
+        new Chart(document.getElementById('radarB'), {
+          type: 'radar',
+          data: { labels: bRadar.labels, datasets: [{ label: '评分', data: bRadar.values, fill: true, borderWidth: 2 }] },
+          options: radarOptions(bRadar.max)
+        });
+      }
+
+      if (bar) {
+        new Chart(document.getElementById('barCompare'), {
+          type: 'bar',
+          data: {
+            labels: bar.labels,
+            datasets: [
+              { label: bar.a.name, data: bar.a.values },
+              { label: bar.b.name, data: bar.b.values },
+            ]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              y: { beginAtZero: true }
+            }
+          }
+        });
+      }
+    </script>
+    {% endif %}
+  </div>
+</body>
+</html>

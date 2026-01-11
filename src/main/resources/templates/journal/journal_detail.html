@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>期刊详情 - {{ journal }}</title>
+  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- 导航栏容器 -->
+  <div id="navbar-container">
+    <nav class="navbar">
+      <a href="http://pkume.com/index.html" class="navbar-brand">
+        <i class="fas fa-graduation-cap"></i>
+        PaperMaster
+      </a>
+      <div class="navbar-menu">
+        <a href="http://pkume.com/index.html">首页</a>
+        <a href="http://127.0.0.1:8080/">期刊列表</a>
+        <a href="http://pkume.com/analysis.html">期刊分析</a>
+        <a href="http://pkume.com/login.html">登录</a><a href="http://pkume.com/register.html" class="btn btn-primary">注册</a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container">
+    <header class="header">
+      <div class="row">
+        <div>
+          <h1>期刊详情</h1>
+          <div class="muted">{{ journal }}</div>
+        </div>
+        <div>
+          <a class="btn" href="{{ request.url_for('journals_page') }}">返回列表</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>年度指标</h2>
+      <div class="muted">按 year 倒序展示</div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>year</th>
+              <th>disruption</th>
+              <th>interdisciplinary</th>
+              <th>novelty</th>
+              <th>topic</th>
+              <th>theme_concentration</th>
+              <th>hot_response</th>
+              <th>paper_count</th>
+              <th>category</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+            <tr>
+              <td>{{ r.get('year', '') }}</td>
+              <td>{{ r.get('disruption', '') }}</td>
+              <td>{{ r.get('interdisciplinary', '') }}</td>
+              <td>{{ r.get('novelty', '') }}</td>
+              <td>{{ r.get('topic', '') }}</td>
+              <td>{{ r.get('theme_concentration', '') }}</td>
+              <td>{{ r.get('hot_response', '') }}</td>
+              <td>{{ r.get('paper_count', '') }}</td>
+              <td>{{ r.get('category', '') or '' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>综合评价</h2>
+      <div class="muted">雷达图元素：内容前沿性=disruption+novelty；学科开放性=interdisciplinary；主题集中度=theme_concentration；主题多样性=topic；热点响应度=hot_response</div>
+
+      <div class="radar-wrap">
+        <canvas id="radarChart" height="260"></canvas>
+      </div>
+
+      <div class="comment-grid">
+        {% for k, v in comments.items() %}
+        <div class="comment">
+          <div class="comment-title">{{ k }}</div>
+          <div class="comment-body">{{ v }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <script id="radarJson" type="application/json">{{ radar_json | safe }}</script>
+      <script>
+        const radar = JSON.parse(document.getElementById('radarJson').textContent);
+        const ctx = document.getElementById('radarChart');
+        new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: radar.labels,
+            datasets: [{
+              label: '评分',
+              data: radar.values,
+              fill: true,
+              borderWidth: 2,
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              r: {
+                beginAtZero: true,
+                suggestedMax: radar.max || 100,
+                ticks: { stepSize: 50 }
+              }
+            }
+          }
+        });
+      </script>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <div>
+          <h2>AI 分析</h2>
+          <div class="muted">点击后将调用模型对该期刊做一次分析（基于最新年份数据）。</div>
+        </div>
+        <div>
+          <button id="aiAnalyzeBtn" class="btn btn-primary" type="button" data-journal="{{ journal }}">开始分析</button>
+        </div>
+      </div>
+
+      <div id="aiStatus" class="muted" style="margin-top: 8px;"></div>
+      <pre id="aiResult" class="ai-result" style="display:none;"></pre>
+
+      <script>
+        const aiBtn = document.getElementById('aiAnalyzeBtn');
+        const aiStatus = document.getElementById('aiStatus');
+        const aiResult = document.getElementById('aiResult');
+        const journalName = aiBtn.dataset.journal;
+
+        async function runAi() {
+          aiBtn.disabled = true;
+          aiStatus.textContent = '正在调用 AI 分析，请稍候...';
+          aiResult.style.display = 'none';
+          aiResult.textContent = '';
+
+          try {
+            const resp = await fetch(`/journals/${encodeURIComponent(journalName)}/ai-analysis`, {
+              method: 'POST',
+            });
+            const data = await resp.json();
+            if (!resp.ok) {
+              throw new Error(data?.detail || '请求失败');
+            }
+            aiStatus.textContent = `分析完成（模型：${data.used_model || ''}）`;
+            aiResult.style.display = 'block';
+            aiResult.textContent = data.analysis || '';
+          } catch (e) {
+            aiStatus.textContent = `分析失败：${e.message || e}`;
+          } finally {
+            aiBtn.disabled = false;
+          }
+        }
+
+        aiBtn.addEventListener('click', runAi);
+      </script>
+    </section>
+
+    <section class="card">
+      <h2>Top Keywords (2021-2025)</h2>
+      <div class="muted">来自该期刊最新年份行的 top_keywords_2021~2025 字段</div>
+
+      <div class="keywords-grid">
+        {% for y, v in top_keywords.items() %}
+        <div class="kw">
+          <div class="kw-title">{{ y }}</div>
+          {% if v and (v|length > 0) %}
+            <div class="tag-list">
+              {% for kw in v %}
+                <span class="tag">{{ kw }}</span>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="muted">（无数据）</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+</body>
+</html>

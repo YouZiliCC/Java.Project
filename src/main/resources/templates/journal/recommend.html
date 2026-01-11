@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>个人期刊推荐</title>
+  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <!-- 导航栏容器 -->
+  <div id="navbar-container">
+    <nav class="navbar">
+      <a href="http://pkume.com/index.html" class="navbar-brand">
+        <i class="fas fa-graduation-cap"></i>
+        PaperMaster
+      </a>
+      <div class="navbar-menu">
+        <a href="http://pkume.com/index.html">首页</a>
+        <a href="http://127.0.0.1:8080/">期刊列表</a>
+        <a href="http://pkume.com/analysis.html">期刊分析</a>
+        <a href="http://pkume.com/login.html">登录</a><a href="http://pkume.com/register.html" class="btn btn-primary">注册</a>
+      </div>
+    </nav>
+  </div>
+
+  <div class="container">
+    <header class="header">
+      <div class="row">
+        <div>
+          <h1>个人期刊推荐</h1>
+          <div class="muted">基于关键词命中 + 雷达匹配度（默认使用各期刊最新年份指标）。</div>
+        </div>
+        <div class="toolbar-right">
+          <a class="btn" href="{{ request.url_for('survey_page') }}">修改问卷</a>
+          <a class="btn" href="{{ request.url_for('journals_page') }}">返回期刊列表</a>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>你的画像（雷达图）</h2>
+      <div class="muted">维度：内容前沿性 / 学科开放性 / 主题集中度 / 主题多样性 / 热点响应度</div>
+      <div class="radar-wrap"><canvas id="userRadar" height="240"></canvas></div>
+
+      <div class="comment-grid" style="margin-top: 14px;">
+        {% for k, v in user_comments.items() %}
+        <div class="comment">
+          <div class="comment-title">{{ k }}</div>
+          <div class="comment-body">{{ v }}</div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <script id="user-radar-json" type="application/json">{{ user_radar_json | safe }}</script>
+      <script>
+        const userRadar = JSON.parse(document.getElementById('user-radar-json').textContent);
+        new Chart(document.getElementById('userRadar'), {
+          type: 'radar',
+          data: { labels: userRadar.labels, datasets: [{ label: '你的画像', data: userRadar.values, fill: true, borderWidth: 2 }] },
+          options: { responsive: true, scales: { r: { beginAtZero: true, suggestedMax: userRadar.max || 100, ticks: { stepSize: 50 } } } }
+        });
+      </script>
+    </section>
+
+    <section class="card">
+      <h2>关键词命中（{{ target_year }}）</h2>
+      <div class="muted">“今年热点研究该词语”的期刊：取该期刊最新年份行的 top_keywords（优先 {{ target_year }}，无则回退最近年份）。</div>
+
+      <div class="hits">
+        {% for kw, js in kw_hits.items() %}
+          <div class="hit">
+            <div class="hit-title">{{ kw }}</div>
+            {% if js and (js|length > 0) %}
+              <div class="tag-list">
+                {% for j in js[:12] %}
+                  <a class="tag" href="{{ request.url_for('recommend_detail', journal=j) }}">{{ j }}</a>
+                {% endfor %}
+              </div>
+              {% if js|length > 12 %}
+                <div class="muted">（仅展示前 12 本）</div>
+              {% endif %}
+            {% else %}
+              <div class="muted">（未命中）</div>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>推荐期刊（Top 10）</h2>
+      <div class="muted">综合得分 = 关键词命中比例(60%) + 雷达相似度(40%)。点击“进一步分析”查看你与期刊的适配维度与评语。</div>
+
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>期刊</th>
+              <th>期刊年份</th>
+              <th>学科/类别</th>
+              <th>命中关键词</th>
+              <th>雷达匹配度</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for r in recs %}
+            <tr>
+              <td>{{ r.journal }}</td>
+              <td>{{ r.year }}</td>
+              <td>{{ r.category or '' }}</td>
+              <td>
+                {% if r.matched_keywords and (r.matched_keywords|length > 0) %}
+                  <div class="tag-list">
+                    {% for k in r.matched_keywords[:8] %}
+                      <span class="tag">{{ k }}</span>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <span class="muted">（无命中）</span>
+                {% endif %}
+              </td>
+              <td>{{ r.match_pct }}%</td>
+              <td><a class="btn btn-primary" href="{{ request.url_for('recommend_detail', journal=r.journal) }}">进一步分析</a></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      {% if recs|length == 0 %}
+        <div class="empty">没有生成推荐结果（可能 journal_metrics 为空）。</div>
+      {% endif %}
+    </section>
+  </div>
+</body>
+</html>
