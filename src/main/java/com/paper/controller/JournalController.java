@@ -65,13 +65,23 @@ public class JournalController {
             }
             
             JournalMetrics latestRow = rows.get(0);
-            Map<Integer, List<String>> topKeywords = service.pickTopKeywords(latestRow);
+            Map<Integer, List<String>> topKeywordsMap = service.pickTopKeywords(latestRow);
+            
+            // 转换为有序列表，便于Thymeleaf渲染
+            List<Map<String, Object>> topKeywordsList = new ArrayList<>();
+            for (int year = 2021; year <= 2025; year++) {
+                Map<String, Object> yearData = new HashMap<>();
+                yearData.put("year", year);
+                yearData.put("keywords", topKeywordsMap.getOrDefault(year, new ArrayList<>()));
+                topKeywordsList.add(yearData);
+            }
+            
             Map<String, Object> radar = service.buildRadarFromRow(latestRow);
             Map<String, String> comments = service.buildCommentsFromRow(latestRow);
             
             model.addAttribute("journal", journal);
             model.addAttribute("rows", rows);
-            model.addAttribute("topKeywords", topKeywords);
+            model.addAttribute("topKeywords", topKeywordsList);
             model.addAttribute("radarJson", objectMapper.writeValueAsString(radar));
             model.addAttribute("comments", comments);
             
@@ -654,8 +664,27 @@ public class JournalController {
                     
                     model.addAttribute("aRow", aRow);
                     model.addAttribute("bRow", bRow);
-                    model.addAttribute("aKeywords", service.pickTopKeywords(aRow));
-                    model.addAttribute("bKeywords", service.pickTopKeywords(bRow));
+                    
+                    // 转换Keywords为列表格式
+                    Map<Integer, List<String>> aKwMap = service.pickTopKeywords(aRow);
+                    Map<Integer, List<String>> bKwMap = service.pickTopKeywords(bRow);
+                    
+                    List<Map<String, Object>> aKwList = new ArrayList<>();
+                    List<Map<String, Object>> bKwList = new ArrayList<>();
+                    for (int year = 2021; year <= 2025; year++) {
+                        Map<String, Object> aYearData = new HashMap<>();
+                        aYearData.put("year", year);
+                        aYearData.put("keywords", aKwMap.getOrDefault(year, new ArrayList<>()));
+                        aKwList.add(aYearData);
+                        
+                        Map<String, Object> bYearData = new HashMap<>();
+                        bYearData.put("year", year);
+                        bYearData.put("keywords", bKwMap.getOrDefault(year, new ArrayList<>()));
+                        bKwList.add(bYearData);
+                    }
+                    
+                    model.addAttribute("aKeywords", aKwList);
+                    model.addAttribute("bKeywords", bKwList);
                     model.addAttribute("aComments", service.buildCommentsFromRow(aRow));
                     model.addAttribute("bComments", service.buildCommentsFromRow(bRow));
                     model.addAttribute("overlayJson", objectMapper.writeValueAsString(overlay));

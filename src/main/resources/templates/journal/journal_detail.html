@@ -4,9 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title th:text="'期刊详情 - ' + ${journal}">期刊详情</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script th:src="@{/js/components.js}"></script>
 </head>
 <body>
   <!-- 导航栏容器 -->
@@ -90,7 +91,7 @@
         </div>
       </div>
 
-      <script id="radarJson" type="application/json" th:text="${radarJson}"></script>
+      <script id="radarJson" type="application/json" th:utext="${radarJson}"></script>
       <script>
         const radar = JSON.parse(document.getElementById('radarJson').textContent);
         const ctx = document.getElementById('radarChart');
@@ -173,11 +174,11 @@
 
       <div class="keywords-grid">
         <div class="kw" th:each="entry : ${topKeywords}">
-          <div class="kw-title" th:text="${entry.key}">year</div>
-          <div class="tag-list" th:if="${entry.value != null && !entry.value.isEmpty()}">
-            <span class="tag" th:each="kw : ${entry.value}" th:text="${kw}">keyword</span>
+          <div class="kw-title" th:text="${entry.year}">year</div>
+          <div class="tag-list" th:if="${entry.keywords != null && !entry.keywords.isEmpty()}">
+            <span class="tag" th:each="kw : ${entry.keywords}" th:text="${kw}">keyword</span>
           </div>
-          <div class="muted" th:if="${entry.value == null || entry.value.isEmpty()}">（无数据）</div>
+          <div class="muted" th:if="${entry.keywords == null || entry.keywords.isEmpty()}">（无数据）</div>
         </div>
       </div>
     </section>

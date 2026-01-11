@@ -4,9 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>期刊对比</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script th:src="@{/js/components.js}"></script>
 </head>
 <body>
   <!-- 导航栏容器 -->
@@ -123,11 +124,11 @@
           <div class="subhead" th:text="${j1}">journal A</div>
           <div class="keywords-grid">
             <div class="kw" th:each="entry : ${aKeywords}">
-              <div class="kw-title" th:text="${entry.key}">year</div>
-              <div class="tag-list" th:if="${entry.value != null && !entry.value.isEmpty()}">
-                <span class="tag" th:each="kw : ${entry.value}" th:text="${kw}">keyword</span>
+              <div class="kw-title" th:text="${entry.year}">year</div>
+              <div class="tag-list" th:if="${entry.keywords != null && !entry.keywords.isEmpty()}">
+                <span class="tag" th:each="kw : ${entry.keywords}" th:text="${kw}">keyword</span>
               </div>
-              <div class="muted" th:if="${entry.value == null || entry.value.isEmpty()}">（无数据）</div>
+              <div class="muted" th:if="${entry.keywords == null || entry.keywords.isEmpty()}">（无数据）</div>
             </div>
           </div>
         </div>
@@ -135,21 +136,21 @@
           <div class="subhead" th:text="${j2}">journal B</div>
           <div class="keywords-grid">
             <div class="kw" th:each="entry : ${bKeywords}">
-              <div class="kw-title" th:text="${entry.key}">year</div>
-              <div class="tag-list" th:if="${entry.value != null && !entry.value.isEmpty()}">
-                <span class="tag" th:each="kw : ${entry.value}" th:text="${kw}">keyword</span>
+              <div class="kw-title" th:text="${entry.year}">year</div>
+              <div class="tag-list" th:if="${entry.keywords != null && !entry.keywords.isEmpty()}">
+                <span class="tag" th:each="kw : ${entry.keywords}" th:text="${kw}">keyword</span>
               </div>
-              <div class="muted" th:if="${entry.value == null || entry.value.isEmpty()}">（无数据）</div>
+              <div class="muted" th:if="${entry.keywords == null || entry.keywords.isEmpty()}">（无数据）</div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <script id="overlay-json" type="application/json" th:text="${overlayJson}"></script>
-    <script id="a-radar-json" type="application/json" th:text="${aRadarJson}"></script>
-    <script id="b-radar-json" type="application/json" th:text="${bRadarJson}"></script>
-    <script id="bar-json" type="application/json" th:text="${barJson}"></script>
+    <script id="overlay-json" type="application/json" th:utext="${overlayJson}"></script>
+    <script id="a-radar-json" type="application/json" th:utext="${aRadarJson}"></script>
+    <script id="b-radar-json" type="application/json" th:utext="${bRadarJson}"></script>
+    <script id="bar-json" type="application/json" th:utext="${barJson}"></script>
 
     <script>
       const overlay = JSON.parse(document.getElementById('overlay-json').textContent);

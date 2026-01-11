@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title th:text="'匹配分析 - ' + ${journal}">匹配分析</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -53,7 +53,7 @@
       <div class="muted">内容前沿性=新颖性+颠覆性；其余维度对应表中字段</div>
       <div class="radar-wrap"><canvas id="radarOverlay" height="260"></canvas></div>
 
-      <script id="overlay-json" type="application/json" th:text="${overlayJson}"></script>
+      <script id="overlay-json" type="application/json" th:utext="${overlayJson}"></script>
 
       <script>
         const overlay = JSON.parse(document.getElementById('overlay-json').textContent);

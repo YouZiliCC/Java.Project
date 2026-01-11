@@ -29,7 +29,7 @@ async function handleLogin(event) {
             const redirect = urlParams.get('redirect');
             
             setTimeout(() => {
-                window.location.href = redirect || 'index.html';
+                window.location.href = redirect || '/index.html';
             }, 1000);
         } else {
             showToast(result, 'error');
@@ -67,7 +67,7 @@ async function handleRegister(event) {
         if (result.includes('成功') || result.includes('success')) {
             showToast('注册成功！请登录', 'success');
             setTimeout(() => {
-                window.location.href = 'login.html';
+                window.location.href = '/auth/login.html';
             }, 1500);
         } else {
             showToast(result, 'error');

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>个人期刊推荐</title>
-  <link rel="stylesheet" th:href="@{/css/app.css}" />
+  <link rel="stylesheet" th:href="@{/css/style.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -52,7 +52,7 @@
         </div>
       </div>
 
-      <script id="user-radar-json" type="application/json" th:text="${userRadarJson}"></script>
+      <script id="user-radar-json" type="application/json" th:utext="${userRadarJson}"></script>
       <script>
         const userRadar = JSON.parse(document.getElementById('user-radar-json').textContent);
         new Chart(document.getElementById('userRadar'), {

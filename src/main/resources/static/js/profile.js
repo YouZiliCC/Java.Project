@@ -15,7 +15,7 @@ async function loadUserInfo() {
     const user = getCurrentUser();
     
     if (!user) {
-        window.location.href = 'login.html';
+        window.location.href = '/auth/login.html';
         return;
     }
     
@@ -45,7 +45,7 @@ async function handleProfileSubmit(event) {
     
     const user = getCurrentUser();
     if (!user) {
-        window.location.href = 'login.html';
+        window.location.href = '/auth/login.html';
         return;
     }
     
@@ -80,7 +80,7 @@ async function handlePasswordSubmit(event) {
     
     const user = getCurrentUser();
     if (!user) {
-        window.location.href = 'login.html';
+        window.location.href = '/auth/login.html';
         return;
     }
     
