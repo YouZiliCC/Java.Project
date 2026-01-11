@@ -68,6 +68,7 @@ dependencies {
 	// 数据库驱动
     runtimeOnly 'mysql:mysql-connector-java:8.0.30'  // MySQL
     implementation 'org.xerial:sqlite-jdbc:3.45.1.0' // SQLite（开发测试用）
+    implementation 'org.hibernate.orm:hibernate-community-dialects:6.4.4.Final' // SQLite方言支持
     
     // 模板引擎
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'

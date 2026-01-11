@@ -6,7 +6,7 @@ import com.paper.model.JournalMetrics;
 import com.paper.model.UserSurvey;
 import com.paper.service.JournalService;
 import com.paper.utils.AIClient;
-import com.paper.utils.JournalDatabaseConfig;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -94,10 +94,7 @@ public class JournalController {
     public Map<String, Object> journalAIAnalysis(@PathVariable String journal) {
         Map<String, Object> result = new HashMap<>();
         try {
-            List<JournalMetrics> rows = dao.fetchJournalRows(journal);
-            if (rows.isEmpty()) {
-                result.put("error", "未找到该期刊");
-                return result;service.dao.fetchJournalRows(journal);
+            List<JournalMetrics> rows = service.dao.fetchJournalRows(journal);
             if (rows.isEmpty()) {
                 result.put("error", "未找到该期刊");
                 return result;
@@ -109,7 +106,10 @@ public class JournalController {
             result.put("journal", journal);
             result.put("year", latestRow.getYear());
             result.put("analysis", analysis);
-            result.put("used_model", ai败：" + e.getMessage());
+            result.put("used_model", aiClient.getConfig().get("model"));
+            
+        } catch (Exception e) {
+            result.put("error", "AI 分析失败：" + e.getMessage());
         }
         return result;
     }
@@ -180,12 +180,12 @@ public class JournalController {
         }
         
         try {
-            List<JournalMetrics> latestRows = dao.fetchLatestJournalRows();
+            List<JournalMetrics> latestRows = service.dao.fetchLatestJournalRows();
             Map<String, Object> userRadar = service.buildUserRadar(survey);
             Set<String> userNorm = survey.getKeywords().stream()
                 .map(service::normalizeKeyword)
                 .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());service.
+                .collect(Collectors.toSet());
             
             int targetYear = LocalDateTime.now().getYear();
             Map<String, List<String>> kwHits = new HashMap<>();
