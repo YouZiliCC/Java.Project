@@ -168,7 +168,7 @@ public class AIClient {
                 }
             }
         } catch (IOException e) {
-            System.err.println("无法加载提示词文件: " + path + ", " + e.getMessage());
+            System.err.println("Failed to load prompt file: " + path + ", " + e.getMessage());
         }
         return "";
     }

@@ -1,29 +1,59 @@
 package com.paper.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.paper.dao.JournalMetricsDAO;
 import com.paper.model.JournalMetrics;
 import com.paper.model.UserSurvey;
+import com.paper.repository.JournalMetricsRepository;
 import com.paper.utils.AIClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 期刊服务层 - 业务逻辑处理
  */
 @Service
 public class JournalService {
-    public final JournalMetricsDAO dao;
+    private final JournalMetricsRepository repository;
     private final AIClient aiClient;
     private static final ObjectMapper objectMapper = new ObjectMapper();
     
     @Autowired
-    public JournalService(JournalMetricsDAO dao, AIClient aiClient) {
-        this.dao = dao;
+    public JournalService(JournalMetricsRepository repository, AIClient aiClient) {
+        this.repository = repository;
         this.aiClient = aiClient;
+    }
+    
+    // Repository访问方法
+    public List<JournalMetrics> fetchJournals() {
+        return repository.findAllLatestYears();
+    }
+    
+    public List<JournalMetrics> fetchJournalRows(String journal) {
+        return repository.findByJournalOrderByYearDesc(journal);
+    }
+    
+    public List<String> fetchJournalNames() {
+        return repository.findAllJournalNames();
+    }
+    
+    public List<JournalMetrics> fetchLatestJournalRows() {
+        return repository.findAllLatestYears();
+    }
+    
+    public JournalMetrics fetchLatestRowForJournal(String journal) {
+        return repository.findLatestByJournal(journal).orElse(null);
+    }
+    
+    public Map<String, JournalMetrics> fetchLatestRowsForTwoJournals(String journalA, String journalB) {
+        List<JournalMetrics> rows = repository.findLatestByTwoJournals(journalA, journalB);
+        Map<String, JournalMetrics> result = new HashMap<>();
+        for (JournalMetrics row : rows) {
+            result.put(row.getJournal(), row);
+        }
+        return result;
     }
     
     /**
@@ -231,7 +261,7 @@ public class JournalService {
      * 选取指定年份的关键词
      */
     public List<String> pickKeywordsForYear(JournalMetrics latestRow, int year) {
-        Map<Integer, List<String>> kwMap = JournalMetricsDAO.pickTopKeywords(latestRow);
+        Map<Integer, List<String>> kwMap = pickTopKeywords(latestRow);
         if (kwMap.containsKey(year)) {
             return kwMap.get(year);
         }
@@ -246,11 +276,81 @@ public class JournalService {
     }
     
     /**
+     * 从最新一行中提取各年份的top_keywords
+     */
+    public Map<Integer, List<String>> pickTopKeywords(JournalMetrics latestRow) {
+        if (latestRow == null) {
+            return new HashMap<>();
+        }
+        
+        Map<Integer, List<String>> result = new HashMap<>();
+        result.put(2021, parseKeywordsValue(latestRow.getTopKeywords2021()));
+        result.put(2022, parseKeywordsValue(latestRow.getTopKeywords2022()));
+        result.put(2023, parseKeywordsValue(latestRow.getTopKeywords2023()));
+        result.put(2024, parseKeywordsValue(latestRow.getTopKeywords2024()));
+        result.put(2025, parseKeywordsValue(latestRow.getTopKeywords2025()));
+        return result;
+    }
+    
+    /**
+     * 解析关键词字段（支持JSON数组、Python字符串表示等）
+     */
+    private List<String> parseKeywordsValue(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        String s = value.trim();
+        
+        // 尝试JSON解析
+        try {
+            JsonNode node = objectMapper.readTree(s);
+            if (node.isArray()) {
+                List<String> result = new ArrayList<>();
+                for (JsonNode item : node) {
+                    String keyword = item.asText().trim();
+                    if (!keyword.isEmpty()) {
+                        result.add(keyword);
+                    }
+                }
+                return result;
+            } else if (node.isObject()) {
+                // 如果是对象，按值（频次）降序排列
+                List<String> result = new ArrayList<>();
+                node.fields().forEachRemaining(entry -> {
+                    result.add(entry.getKey());
+                });
+                return result;
+            }
+        } catch (Exception e) {
+            // 不是有效JSON，继续尝试其他方式
+        }
+        
+        // 兜底：按分隔符拆分
+        String[] separators = {";", "；", ",", "，", "|", "/"};
+        for (String sep : separators) {
+            if (s.contains(sep)) {
+                String[] parts = s.split(sep);
+                List<String> result = new ArrayList<>();
+                for (String part : parts) {
+                    String trimmed = part.trim();
+                    if (!trimmed.isEmpty()) {
+                        result.add(trimmed);
+                    }
+                }
+                return result;
+            }
+        }
+        
+        return List.of(s);
+    }
+    
+    /**
      * 生成期刊AI分析
      */
     public String generateJournalAIAnalysis(JournalMetrics latestRow) 
             throws Exception {
-        Map<Integer, List<String>> topKeywords = JournalMetricsDAO.pickTopKeywords(latestRow);
+        Map<Integer, List<String>> topKeywords = pickTopKeywords(latestRow);
         Map<String, Object> radar = buildRadarFromRow(latestRow);
         Map<String, String> comments = buildCommentsFromRow(latestRow);
         

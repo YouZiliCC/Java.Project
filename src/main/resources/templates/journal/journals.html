@@ -1,25 +1,26 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>期刊列表</title>
-  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}" />
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
   <!-- 导航栏容器 -->
   <div id="navbar-container">
     <nav class="navbar">
-      <a href="http://pkume.com/index.html" class="navbar-brand">
+      <a th:href="@{/}" class="navbar-brand">
         <i class="fas fa-graduation-cap"></i>
         PaperMaster
       </a>
       <div class="navbar-menu">
-        <a href="http://pkume.com/index.html">首页</a>
-        <a href="http://127.0.0.1:8080/">期刊列表</a>
-        <a href="http://pkume.com/analysis.html">期刊分析</a>
-        <a href="http://pkume.com/login.html">登录</a><a href="http://pkume.com/register.html" class="btn btn-primary">注册</a>
+        <a th:href="@{/}">首页</a>
+        <a th:href="@{/journal}">期刊列表</a>
+        <a th:href="@{/analysis.html}">期刊分析</a>
+        <a th:href="@{/auth/login.html}">登录</a>
+        <a th:href="@{/auth/register.html}" class="btn btn-primary">注册</a>
       </div>
     </nav>
   </div>
@@ -54,28 +55,24 @@
           </tr>
         </thead>
         <tbody>
-        {% for j in journals %}
-          <tr>
+        <tr th:each="j : ${journals}">
             <td>
-              <input class="compare-check" type="checkbox" value="{{ j['journal'] }}" />
+              <input class="compare-check" type="checkbox" th:value="${j.journal}" />
             </td>
-            <td data-sort="{{ (j['journal'] or '') | lower }}">
-              <a href="{{ request.url_for('journal_detail', journal=j['journal']) }}">{{ j['journal'] }}</a>
+            <td th:attr="data-sort=${#strings.toLowerCase(j.journal ?: '')}">
+              <a th:href="@{/journal/{journal}(journal=${j.journal})}" th:text="${j.journal}">期刊名</a>
             </td>
-            <td data-sort="{{ j.get('latest_year', '') }}">{{ j.get('latest_year', '') }}</td>
-            <td>{{ j.get('category', '') or '' }}</td>
-            <td data-sort="{{ j.get('paper_count', '') }}">{{ j.get('paper_count', '') }}</td>
-            <td>{{ j.get('novelty', '') }}</td>
-            <td>{{ j.get('disruption', '') }}</td>
-            <td>{{ j.get('interdisciplinary', '') }}</td>
+            <td th:attr="data-sort=${j.year ?: ''}" th:text="${j.year ?: ''}">年份</td>
+            <td th:text="${j.category ?: ''}">类别</td>
+            <td th:attr="data-sort=${j.paperCount ?: ''}" th:text="${j.paperCount ?: ''}">数量</td>
+            <td th:text="${j.novelty != null ? #numbers.formatDecimal(j.novelty, 1, 2) : ''}">新颖性</td>
+            <td th:text="${j.disruption != null ? #numbers.formatDecimal(j.disruption, 1, 2) : ''}">颠覆性</td>
+            <td th:text="${j.interdisciplinary != null ? #numbers.formatDecimal(j.interdisciplinary, 1, 2) : ''}">跨学科</td>
           </tr>
-        {% endfor %}
         </tbody>
       </table>
 
-      {% if journals|length == 0 %}
-        <div class="empty">没有查到任何期刊数据（journal_metrics 可能为空）。</div>
-      {% endif %}
+      <div class="empty" th:if="${journals == null || journals.isEmpty()}">没有查到任何期刊数据（journal_metrics 可能为空）。</div>
     </div>
   </div>
 
@@ -162,7 +159,7 @@
     compareBtn.addEventListener('click', () => {
       const sel = selectedJournals();
       if (sel.length !== 2) return;
-      const url = `/compare?j1=${encodeURIComponent(sel[0])}&j2=${encodeURIComponent(sel[1])}`;
+      const url = `/journal/compare?j1=${encodeURIComponent(sel[0])}&j2=${encodeURIComponent(sel[1])}`;
       window.location.href = url;
     });
 
@@ -172,7 +169,7 @@
     }
 
     recommendBtn.addEventListener('click', () => {
-      window.location.href = hasSurveyCookie() ? '/recommend' : '/survey';
+      window.location.href = hasSurveyCookie() ? '/journal/recommend' : '/journal/survey';
     });
 
     updateCompareBtn();

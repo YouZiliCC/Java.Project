@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>个人期刊推荐</title>
-  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}" />
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -12,15 +12,16 @@
   <!-- 导航栏容器 -->
   <div id="navbar-container">
     <nav class="navbar">
-      <a href="http://pkume.com/index.html" class="navbar-brand">
+      <a th:href="@{/}" class="navbar-brand">
         <i class="fas fa-graduation-cap"></i>
         PaperMaster
       </a>
       <div class="navbar-menu">
-        <a href="http://pkume.com/index.html">首页</a>
-        <a href="http://127.0.0.1:8080/">期刊列表</a>
-        <a href="http://pkume.com/analysis.html">期刊分析</a>
-        <a href="http://pkume.com/login.html">登录</a><a href="http://pkume.com/register.html" class="btn btn-primary">注册</a>
+        <a th:href="@{/}">首页</a>
+        <a th:href="@{/journal}">期刊列表</a>
+        <a th:href="@{/analysis.html}">期刊分析</a>
+        <a th:href="@{/auth/login.html}">登录</a>
+        <a th:href="@{/auth/register.html}" class="btn btn-primary">注册</a>
       </div>
     </nav>
   </div>
@@ -33,8 +34,8 @@
           <div class="muted">基于关键词命中 + 雷达匹配度（默认使用各期刊最新年份指标）。</div>
         </div>
         <div class="toolbar-right">
-          <a class="btn" href="{{ request.url_for('survey_page') }}">修改问卷</a>
-          <a class="btn" href="{{ request.url_for('journals_page') }}">返回期刊列表</a>
+          <a class="btn" th:href="@{/journal/survey}">修改问卷</a>
+          <a class="btn" th:href="@{/journal}">返回期刊列表</a>
         </div>
       </div>
     </header>
@@ -45,15 +46,13 @@
       <div class="radar-wrap"><canvas id="userRadar" height="240"></canvas></div>
 
       <div class="comment-grid" style="margin-top: 14px;">
-        {% for k, v in user_comments.items() %}
-        <div class="comment">
-          <div class="comment-title">{{ k }}</div>
-          <div class="comment-body">{{ v }}</div>
+        <div class="comment" th:each="entry : ${userComments}">
+          <div class="comment-title" th:text="${entry.key}">key</div>
+          <div class="comment-body" th:text="${entry.value}">value</div>
         </div>
-        {% endfor %}
       </div>
 
-      <script id="user-radar-json" type="application/json">{{ user_radar_json | safe }}</script>
+      <script id="user-radar-json" type="application/json" th:text="${userRadarJson}"></script>
       <script>
         const userRadar = JSON.parse(document.getElementById('user-radar-json').textContent);
         new Chart(document.getElementById('userRadar'), {
@@ -65,27 +64,21 @@
     </section>
 
     <section class="card">
-      <h2>关键词命中（{{ target_year }}）</h2>
-      <div class="muted">“今年热点研究该词语”的期刊：取该期刊最新年份行的 top_keywords（优先 {{ target_year }}，无则回退最近年份）。</div>
+      <h2 th:text="'关键词命中（' + ${targetYear} + '）'">关键词命中</h2>
+      <div class="muted" th:text="'"今年热点研究该词语”的期刊：取该期刊最新年份行的 top_keywords（优先 ' + ${targetYear} + '，无则回退最近年份）。'">desc</div>
 
       <div class="hits">
-        {% for kw, js in kw_hits.items() %}
-          <div class="hit">
-            <div class="hit-title">{{ kw }}</div>
-            {% if js and (js|length > 0) %}
-              <div class="tag-list">
-                {% for j in js[:12] %}
-                  <a class="tag" href="{{ request.url_for('recommend_detail', journal=j) }}">{{ j }}</a>
-                {% endfor %}
-              </div>
-              {% if js|length > 12 %}
-                <div class="muted">（仅展示前 12 本）</div>
-              {% endif %}
-            {% else %}
-              <div class="muted">（未命中）</div>
-            {% endif %}
+        <div class="hit" th:each="entry : ${kwHits}">
+          <div class="hit-title" th:text="${entry.key}">keyword</div>
+          <div class="tag-list" th:if="${entry.value != null && !entry.value.isEmpty()}">
+            <a class="tag" th:each="j, iterStat : ${entry.value}" 
+               th:if="${iterStat.index < 12}"
+               th:href="@{/journal/recommend/{journal}(journal=${j})}" 
+               th:text="${j}">journal</a>
           </div>
-        {% endfor %}
+          <div class="muted" th:if="${entry.value != null && entry.value.size() > 12}">（仅展示前 12 本）</div>
+          <div class="muted" th:if="${entry.value == null || entry.value.isEmpty()}">（未命中）</div>
+        </div>
       </div>
     </section>
 
@@ -106,33 +99,26 @@
             </tr>
           </thead>
           <tbody>
-          {% for r in recs %}
-            <tr>
-              <td>{{ r.journal }}</td>
-              <td>{{ r.year }}</td>
-              <td>{{ r.category or '' }}</td>
-              <td>
-                {% if r.matched_keywords and (r.matched_keywords|length > 0) %}
-                  <div class="tag-list">
-                    {% for k in r.matched_keywords[:8] %}
-                      <span class="tag">{{ k }}</span>
-                    {% endfor %}
-                  </div>
-                {% else %}
-                  <span class="muted">（无命中）</span>
-                {% endif %}
-              </td>
-              <td>{{ r.match_pct }}%</td>
-              <td><a class="btn btn-primary" href="{{ request.url_for('recommend_detail', journal=r.journal) }}">进一步分析</a></td>
-            </tr>
-          {% endfor %}
+          <tr th:each="r : ${recs}">
+            <td th:text="${r.journal}">journal</td>
+            <td th:text="${r.year}">year</td>
+            <td th:text="${r.category ?: ''}">category</td>
+            <td>
+              <div class="tag-list" th:if="${r.matchedKeywords != null && !r.matchedKeywords.isEmpty()}">
+                <span class="tag" th:each="k, iterStat : ${r.matchedKeywords}" 
+                      th:if="${iterStat.index < 8}"
+                      th:text="${k}">keyword</span>
+              </div>
+              <span class="muted" th:if="${r.matchedKeywords == null || r.matchedKeywords.isEmpty()}">（无命中）</span>
+            </td>
+            <td th:text="${r.matchPct} + '%'">0%</td>
+            <td><a class="btn btn-primary" th:href="@{/journal/recommend/{journal}(journal=${r.journal})}">进一步分析</a></td>
+          </tr>
           </tbody>
         </table>
       </div>
 
-      {% if recs|length == 0 %}
-        <div class="empty">没有生成推荐结果（可能 journal_metrics 为空）。</div>
-      {% endif %}
+      <div class="empty" th:if="${recs == null || recs.isEmpty()}">没有生成推荐结果（可能 journal_metrics 为空）。</div>
     </section>
   </div>
 </body>

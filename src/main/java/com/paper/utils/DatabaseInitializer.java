@@ -38,6 +38,9 @@ public class DatabaseInitializer {
                 // 创建关键词表
                 createKeywordTable(stmt);
                 
+                // 创建期刊指标表
+                createJournalMetricsTable(stmt);
+                
                 // 创建分析记录表
                 createAnalysisRecordTable(stmt);
                 
@@ -197,6 +200,71 @@ public class DatabaseInitializer {
         }
         stmt.executeUpdate(sql);
         System.out.println("  [OK] Table 'keywords' created");
+    }
+    
+    /**
+     * 创建期刊指标表
+     */
+    private static void createJournalMetricsTable(Statement stmt) throws SQLException {
+        String sql;
+        if (DatabaseConfig.isSQLiteMode()) {
+            sql = """
+                CREATE TABLE IF NOT EXISTS journal_metrics (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    journal VARCHAR(512) NOT NULL,
+                    year INTEGER NOT NULL,
+                    disruption REAL,
+                    interdisciplinary REAL,
+                    novelty REAL,
+                    topic REAL,
+                    theme_concentration REAL,
+                    hot_response REAL,
+                    top_keywords_2021 TEXT,
+                    top_keywords_2022 TEXT,
+                    top_keywords_2023 TEXT,
+                    top_keywords_2024 TEXT,
+                    top_keywords_2025 TEXT,
+                    paper_count INTEGER,
+                    category VARCHAR(100),
+                    UNIQUE(journal, year)
+                )
+            """;
+        } else {
+            sql = """
+                CREATE TABLE IF NOT EXISTS journal_metrics (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    journal VARCHAR(512) NOT NULL,
+                    year INT NOT NULL,
+                    disruption DOUBLE,
+                    interdisciplinary DOUBLE,
+                    novelty DOUBLE,
+                    topic DOUBLE,
+                    theme_concentration DOUBLE,
+                    hot_response DOUBLE,
+                    top_keywords_2021 TEXT,
+                    top_keywords_2022 TEXT,
+                    top_keywords_2023 TEXT,
+                    top_keywords_2024 TEXT,
+                    top_keywords_2025 TEXT,
+                    paper_count INT,
+                    category VARCHAR(100),
+                    UNIQUE KEY idx_journal_year (journal, year)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """;
+        }
+        stmt.executeUpdate(sql);
+        
+        // 为 SQLite 创建索引
+        if (DatabaseConfig.isSQLiteMode()) {
+            try {
+                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_journal_metrics_journal ON journal_metrics(journal)");
+                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_journal_metrics_year ON journal_metrics(year)");
+                stmt.executeUpdate("CREATE INDEX IF NOT EXISTS idx_journal_metrics_category ON journal_metrics(category)");
+            } catch (SQLException e) {
+                // 索引可能已存在，忽略
+            }
+        }
+        System.out.println("  [OK] Table 'journal_metrics' created");
     }
     
     /**

@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>期刊详情 - {{ journal }}</title>
-  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}" />
+  <title th:text="'期刊详情 - ' + ${journal}">期刊详情</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -12,15 +12,16 @@
   <!-- 导航栏容器 -->
   <div id="navbar-container">
     <nav class="navbar">
-      <a href="http://pkume.com/index.html" class="navbar-brand">
+      <a th:href="@{/}" class="navbar-brand">
         <i class="fas fa-graduation-cap"></i>
         PaperMaster
       </a>
       <div class="navbar-menu">
-        <a href="http://pkume.com/index.html">首页</a>
-        <a href="http://127.0.0.1:8080/">期刊列表</a>
-        <a href="http://pkume.com/analysis.html">期刊分析</a>
-        <a href="http://pkume.com/login.html">登录</a><a href="http://pkume.com/register.html" class="btn btn-primary">注册</a>
+        <a th:href="@{/}">首页</a>
+        <a th:href="@{/journal}">期刊列表</a>
+        <a th:href="@{/analysis.html}">期刊分析</a>
+        <a th:href="@{/auth/login.html}">登录</a>
+        <a th:href="@{/auth/register.html}" class="btn btn-primary">注册</a>
       </div>
     </nav>
   </div>
@@ -30,10 +31,10 @@
       <div class="row">
         <div>
           <h1>期刊详情</h1>
-          <div class="muted">{{ journal }}</div>
+          <div class="muted" th:text="${journal}">期刊名</div>
         </div>
         <div>
-          <a class="btn" href="{{ request.url_for('journals_page') }}">返回列表</a>
+          <a class="btn" th:href="@{/journal}">返回列表</a>
         </div>
       </div>
     </header>
@@ -58,19 +59,17 @@
             </tr>
           </thead>
           <tbody>
-            {% for r in rows %}
-            <tr>
-              <td>{{ r.get('year', '') }}</td>
-              <td>{{ r.get('disruption', '') }}</td>
-              <td>{{ r.get('interdisciplinary', '') }}</td>
-              <td>{{ r.get('novelty', '') }}</td>
-              <td>{{ r.get('topic', '') }}</td>
-              <td>{{ r.get('theme_concentration', '') }}</td>
-              <td>{{ r.get('hot_response', '') }}</td>
-              <td>{{ r.get('paper_count', '') }}</td>
-              <td>{{ r.get('category', '') or '' }}</td>
+            <tr th:each="r : ${rows}">
+              <td th:text="${r.year ?: ''}">year</td>
+              <td th:text="${r.disruption ?: ''}">disruption</td>
+              <td th:text="${r.interdisciplinary ?: ''}">interdisciplinary</td>
+              <td th:text="${r.novelty ?: ''}">novelty</td>
+              <td th:text="${r.topic ?: ''}">topic</td>
+              <td th:text="${r.themeConcentration ?: ''}">theme</td>
+              <td th:text="${r.hotResponse ?: ''}">hot</td>
+              <td th:text="${r.paperCount ?: ''}">paper_count</td>
+              <td th:text="${r.category ?: ''}">category</td>
             </tr>
-            {% endfor %}
           </tbody>
         </table>
       </div>
@@ -85,15 +84,13 @@
       </div>
 
       <div class="comment-grid">
-        {% for k, v in comments.items() %}
-        <div class="comment">
-          <div class="comment-title">{{ k }}</div>
-          <div class="comment-body">{{ v }}</div>
+        <div class="comment" th:each="entry : ${comments}">
+          <div class="comment-title" th:text="${entry.key}">key</div>
+          <div class="comment-body" th:text="${entry.value}">value</div>
         </div>
-        {% endfor %}
       </div>
 
-      <script id="radarJson" type="application/json">{{ radar_json | safe }}</script>
+      <script id="radarJson" type="application/json" th:text="${radarJson}"></script>
       <script>
         const radar = JSON.parse(document.getElementById('radarJson').textContent);
         const ctx = document.getElementById('radarChart');
@@ -129,7 +126,7 @@
           <div class="muted">点击后将调用模型对该期刊做一次分析（基于最新年份数据）。</div>
         </div>
         <div>
-          <button id="aiAnalyzeBtn" class="btn btn-primary" type="button" data-journal="{{ journal }}">开始分析</button>
+          <button id="aiAnalyzeBtn" class="btn btn-primary" type="button" th:attr="data-journal=${journal}">开始分析</button>
         </div>
       </div>
 
@@ -149,7 +146,7 @@
           aiResult.textContent = '';
 
           try {
-            const resp = await fetch(`/journals/${encodeURIComponent(journalName)}/ai-analysis`, {
+            const resp = await fetch(`/journal/${encodeURIComponent(journalName)}/ai-analysis`, {
               method: 'POST',
             });
             const data = await resp.json();
@@ -175,20 +172,13 @@
       <div class="muted">来自该期刊最新年份行的 top_keywords_2021~2025 字段</div>
 
       <div class="keywords-grid">
-        {% for y, v in top_keywords.items() %}
-        <div class="kw">
-          <div class="kw-title">{{ y }}</div>
-          {% if v and (v|length > 0) %}
-            <div class="tag-list">
-              {% for kw in v %}
-                <span class="tag">{{ kw }}</span>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="muted">（无数据）</div>
-          {% endif %}
+        <div class="kw" th:each="entry : ${topKeywords}">
+          <div class="kw-title" th:text="${entry.key}">year</div>
+          <div class="tag-list" th:if="${entry.value != null && !entry.value.isEmpty()}">
+            <span class="tag" th:each="kw : ${entry.value}" th:text="${kw}">keyword</span>
+          </div>
+          <div class="muted" th:if="${entry.value == null || entry.value.isEmpty()}">（无数据）</div>
         </div>
-        {% endfor %}
       </div>
     </section>
   </div>

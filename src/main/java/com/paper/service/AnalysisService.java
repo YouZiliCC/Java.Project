@@ -2,7 +2,6 @@ package com.paper.service;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -424,60 +423,6 @@ public class AnalysisService {
                     e.printStackTrace();
                 }
             }
-        }
-        
-        return papers;
-    }
-
-    /**
-     * 解析CSV内容为论文列表
-     */
-    private List<Paper> parseCsvContent(String content) {
-        List<Paper> papers = new ArrayList<>();
-        String[] lines = content.split("\n");
-        
-        if (lines.length < 2) {
-            return papers;
-        }
-        
-        // 解析表头
-        String[] headers = lines[0].split(",");
-        Map<String, Integer> headerIndex = new HashMap<>();
-        for (int i = 0; i < headers.length; i++) {
-            headerIndex.put(headers[i].trim().toLowerCase(), i);
-        }
-        
-        // 解析数据行
-        for (int i = 1; i < lines.length; i++) {
-            String[] values = lines[i].split(",");
-            if (values.length < 2) continue;
-            
-            Paper paper = new Paper();
-            
-            if (headerIndex.containsKey("title") && headerIndex.get("title") < values.length) {
-                paper.setTitle(values[headerIndex.get("title")].trim());
-            }
-            if (headerIndex.containsKey("author") && headerIndex.get("author") < values.length) {
-                paper.setAuthor(values[headerIndex.get("author")].trim());
-            }
-            if (headerIndex.containsKey("journal") && headerIndex.get("journal") < values.length) {
-                paper.setJournal(values[headerIndex.get("journal")].trim());
-            }
-            if (headerIndex.containsKey("citations") && headerIndex.get("citations") < values.length) {
-                try {
-                    paper.setCitations(Integer.parseInt(values[headerIndex.get("citations")].trim()));
-                } catch (NumberFormatException e) {
-                    paper.setCitations(0);
-                }
-            }
-            if (headerIndex.containsKey("country") && headerIndex.get("country") < values.length) {
-                paper.setCountry(values[headerIndex.get("country")].trim());
-            }
-            if (headerIndex.containsKey("target") && headerIndex.get("target") < values.length) {
-                paper.setTarget(values[headerIndex.get("target")].trim());
-            }
-            
-            papers.add(paper);
         }
         
         return papers;

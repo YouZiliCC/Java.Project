@@ -1,7 +1,6 @@
 package com.paper.model;
 
 import jakarta.persistence.*;
-import java.util.List;
 
 /**
  * 期刊指标实体类

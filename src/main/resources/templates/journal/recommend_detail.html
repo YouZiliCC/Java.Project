@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>匹配分析 - {{ journal }}</title>
-  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}" />
+  <title th:text="'匹配分析 - ' + ${journal}">匹配分析</title>
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
@@ -12,15 +12,16 @@
   <!-- 导航栏容器 -->
   <div id="navbar-container">
     <nav class="navbar">
-      <a href="http://pkume.com/index.html" class="navbar-brand">
+      <a th:href="@{/}" class="navbar-brand">
         <i class="fas fa-graduation-cap"></i>
         PaperMaster
       </a>
       <div class="navbar-menu">
-        <a href="http://pkume.com/index.html">首页</a>
-        <a href="http://127.0.0.1:8080/">期刊列表</a>
-        <a href="http://pkume.com/analysis.html">期刊分析</a>
-        <a href="http://pkume.com/login.html">登录</a><a href="http://pkume.com/register.html" class="btn btn-primary">注册</a>
+        <a th:href="@{/}">首页</a>
+        <a th:href="@{/journal}">期刊列表</a>
+        <a th:href="@{/analysis.html}">期刊分析</a>
+        <a th:href="@{/auth/login.html}">登录</a>
+        <a th:href="@{/auth/register.html}" class="btn btn-primary">注册</a>
       </div>
     </nav>
   </div>
@@ -30,26 +31,21 @@
       <div class="row">
         <div>
           <h1>匹配分析</h1>
-          <div class="muted">期刊：{{ journal }}（{{ row.get('year','') }}）｜总体雷达匹配度：{{ match_pct }}%</div>
+          <div class="muted" th:text="'期刊：' + ${journal} + '（' + ${row.year} + '）｜总体雷达匹配度：' + ${matchPct} + '%'">journal info</div>
         </div>
         <div class="toolbar-right">
-          <a class="btn" href="{{ request.url_for('recommend_page') }}">返回推荐列表</a>
-          <a class="btn" href="{{ request.url_for('survey_page') }}">修改问卷</a>
+          <a class="btn" th:href="@{/journal/recommend}">返回推荐列表</a>
+          <a class="btn" th:href="@{/journal/survey}">修改问卷</a>
         </div>
       </div>
     </header>
 
     <section class="card">
-      <h2>关键词命中（{{ target_year }}）</h2>
-      {% if matched_user_keywords and (matched_user_keywords|length > 0) %}
-        <div class="tag-list">
-          {% for k in matched_user_keywords %}
-            <span class="tag">{{ k }}</span>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="muted">（你的关键词未命中该期刊今年/最新关键词列表）</div>
-      {% endif %}
+      <h2 th:text="'关键词命中（' + ${targetYear} + '）'">关键词命中</h2>
+      <div class="tag-list" th:if="${matchedUserKeywords != null && !matchedUserKeywords.isEmpty()}">
+        <span class="tag" th:each="k : ${matchedUserKeywords}" th:text="${k}">keyword</span>
+      </div>
+      <div class="muted" th:if="${matchedUserKeywords == null || matchedUserKeywords.isEmpty()}">（你的关键词未命中该期刊今年/最新关键词列表）</div>
     </section>
 
     <section class="card">
@@ -57,7 +53,7 @@
       <div class="muted">内容前沿性=新颖性+颠覆性；其余维度对应表中字段</div>
       <div class="radar-wrap"><canvas id="radarOverlay" height="260"></canvas></div>
 
-      <script id="overlay-json" type="application/json">{{ overlay_json | safe }}</script>
+      <script id="overlay-json" type="application/json" th:text="${overlayJson}"></script>
 
       <script>
         const overlay = JSON.parse(document.getElementById('overlay-json').textContent);
@@ -93,15 +89,13 @@
             </tr>
           </thead>
           <tbody>
-            {% for d in diffs %}
-              <tr>
-                <td>{{ d.dim }}</td>
-                <td>{{ '%.2f'|format(d.user) }}</td>
-                <td>{{ '%.2f'|format(d.journal) }}</td>
-                <td>{{ '%.2f'|format(d.gap) }}</td>
-                <td>{{ d.match }}%</td>
-              </tr>
-            {% endfor %}
+            <tr th:each="d : ${diffs}">
+              <td th:text="${d.dim}">dim</td>
+              <td th:text="${#numbers.formatDecimal(d.user, 1, 2)}">user</td>
+              <td th:text="${#numbers.formatDecimal(d.journal, 1, 2)}">journal</td>
+              <td th:text="${#numbers.formatDecimal(d.gap, 1, 2)}">gap</td>
+              <td th:text="${d.match} + '%'">match</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -112,17 +106,17 @@
       <div class="two-col">
         <div class="comment">
           <div class="comment-title">你的画像</div>
-          {% for k, v in user_comments.items() %}
-            <div class="comment-k">{{ k }}</div>
-            <div class="comment-body">{{ v }}</div>
-          {% endfor %}
+          <div th:each="entry : ${userComments}">
+            <div class="comment-k" th:text="${entry.key}">key</div>
+            <div class="comment-body" th:text="${entry.value}">value</div>
+          </div>
         </div>
         <div class="comment">
-          <div class="comment-title">{{ journal }}</div>
-          {% for k, v in journal_comments.items() %}
-            <div class="comment-k">{{ k }}</div>
-            <div class="comment-body">{{ v }}</div>
-          {% endfor %}
+          <div class="comment-title" th:text="${journal}">journal</div>
+          <div th:each="entry : ${journalComments}">
+            <div class="comment-k" th:text="${entry.key}">key</div>
+            <div class="comment-body" th:text="${entry.value}">value</div>
+          </div>
         </div>
       </div>
     </section>
@@ -134,7 +128,7 @@
           <div class="muted">将结合你的问卷画像与该期刊指标，输出更细的适配建议。</div>
         </div>
         <div>
-          <button id="aiMatchBtn" class="btn btn-primary" type="button" data-journal="{{ journal }}">开始分析</button>
+          <button id="aiMatchBtn" class="btn btn-primary" type="button" th:attr="data-journal=${journal}">开始分析</button>
         </div>
       </div>
 
@@ -153,7 +147,7 @@
           out.style.display = 'none';
           out.textContent = '';
           try {
-            const resp = await fetch(`/recommend/${encodeURIComponent(journalName)}/ai-analysis`, { method: 'POST' });
+            const resp = await fetch(`/journal/recommend/${encodeURIComponent(journalName)}/ai-analysis`, { method: 'POST' });
             const data = await resp.json();
             if (!resp.ok) {
               throw new Error(data?.detail || '请求失败');

@@ -70,6 +70,7 @@ CREATE INDEX IF NOT EXISTS idx_cleaned_category ON cleaned(category);
 -- 用于存储期刊在不同年份的各项学术计量指标
 -- ============================================
 CREATE TABLE IF NOT EXISTS journal_metrics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     journal VARCHAR(512) NOT NULL,
     year INTEGER NOT NULL,
     disruption REAL,           -- 颠覆性指标
@@ -85,7 +86,7 @@ CREATE TABLE IF NOT EXISTS journal_metrics (
     top_keywords_2025 TEXT,    -- 2025年顶级关键词
     paper_count INTEGER,       -- 论文总数
     category VARCHAR(100),     -- 期刊分类
-    PRIMARY KEY (journal, year)
+    UNIQUE(journal, year)
 );
 
 CREATE INDEX IF NOT EXISTS idx_journal_metrics_journal ON journal_metrics(journal);

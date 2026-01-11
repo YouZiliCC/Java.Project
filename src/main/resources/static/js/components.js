@@ -13,7 +13,7 @@ function renderNavbar() {
         </a>
         <div class="navbar-menu">
             <a href="index.html">首页</a>
-            <a href="http://127.0.0.1:8080">期刊列表</a>
+            <a href="journal/index.html">期刊列表</a>
             <a href="analysis.html">期刊分析</a>
             ${isLoggedIn ? 
                 '<a href="#" id="logoutLink">登出</a>' : 

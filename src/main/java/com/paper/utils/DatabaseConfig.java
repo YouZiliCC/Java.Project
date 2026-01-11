@@ -1,27 +1,15 @@
 package com.paper.utils;
 
-import java.io.File;
-
 /**
  * 数据库配置类
  * 使用 SQLite 作为唯一数据库
- * 数据库文件存储在 data/paper_system.db
+ * 数据库文件存储在项目根目录 paper.db
  */
 public class DatabaseConfig {
     
     // SQLite 配置
-    public static final String SQLITE_DB_FILE = "data/paper_system.db";
+    public static final String SQLITE_DB_FILE = "paper.db";
     public static final String SQLITE_DRIVER = "org.sqlite.JDBC";
-    
-    /**
-     * 确保数据目录存在
-     */
-    static {
-        File dataDir = new File("data");
-        if (!dataDir.exists()) {
-            dataDir.mkdirs();
-        }
-    }
     
     /**
      * 始终使用 SQLite 模式

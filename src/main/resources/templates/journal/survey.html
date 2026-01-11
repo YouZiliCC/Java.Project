@@ -1,25 +1,26 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>问卷 - 论文画像</title>
-  <link rel="stylesheet" href="{{ request.url_for('static', path='app.css') }}" />
+  <link rel="stylesheet" th:href="@{/css/app.css}" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
   <!-- 导航栏容器 -->
   <div id="navbar-container">
     <nav class="navbar">
-      <a href="http://pkume.com/index.html" class="navbar-brand">
+      <a th:href="@{/}" class="navbar-brand">
         <i class="fas fa-graduation-cap"></i>
         PaperMaster
       </a>
       <div class="navbar-menu">
-        <a href="http://pkume.com/index.html">首页</a>
-        <a href="http://127.0.0.1:8080/">期刊列表</a>
-        <a href="http://pkume.com/analysis.html">期刊分析</a>
-        <a href="http://pkume.com/login.html">登录</a><a href="http://pkume.com/register.html" class="btn btn-primary">注册</a>
+        <a th:href="@{/}">首页</a>
+        <a th:href="@{/journal}">期刊列表</a>
+        <a th:href="@{/analysis.html}">期刊分析</a>
+        <a th:href="@{/auth/login.html}">登录</a>
+        <a th:href="@{/auth/register.html}" class="btn btn-primary">注册</a>
       </div>
     </nav>
   </div>
@@ -32,16 +33,16 @@
           <div class="muted">用于生成你的研究偏好画像，并据此匹配期刊（本次浏览会保存）。</div>
         </div>
         <div>
-          <a class="btn" href="{{ request.url_for('journals_page') }}">返回期刊列表</a>
+          <a class="btn" th:href="@{/journal}">返回期刊列表</a>
         </div>
       </div>
     </header>
 
     <section class="card">
-      <form class="survey-form" method="post" action="{{ request.url_for('survey_analyze') }}">
+      <form class="survey-form" method="post" th:action="@{/journal/survey}">
         <div class="field">
           <div class="label">你的研究领域关键词（可中文/英文，多个用逗号/分号/换行分隔）</div>
-          <textarea class="textarea" name="keywords" rows="3" placeholder="例如：graph neural network; citation analysis; disruption index\n（需要时可写英文）" required>{{ (survey.get('keywords_raw') or '') }}</textarea>
+          <textarea class="textarea" name="keywords" rows="3" placeholder="例如：graph neural network; citation analysis; disruption index\n（需要时可写英文）" required></textarea>
           <div class="muted">提示：建议 3-10 个关键词，越贴近论文主题越好。</div>
         </div>
 
@@ -117,7 +118,7 @@
 
         <div class="survey-actions">
           <button class="btn btn-primary" type="submit">提交并分析</button>
-          <a class="btn" href="{{ request.url_for('recommend_page') }}">跳过填写（若已填）</a>
+          <a class="btn" th:href="@{/journal/recommend}">跳过填写（若已填）</a>
         </div>
       </form>
     </section>
